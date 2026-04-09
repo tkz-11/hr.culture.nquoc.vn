@@ -83,35 +83,47 @@ function DevModeLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-nquoc-bg flex items-center justify-center">
-      <div className="bg-white rounded-2xl shadow-lg p-8 w-80">
-        <div className="text-center mb-6">
-          <div className="w-12 h-12 bg-nquoc-blue rounded-xl flex items-center justify-center text-white font-bold text-xl font-header mx-auto mb-3">
+    <div className="min-h-screen bg-nquoc-bg flex items-center justify-center p-6">
+      <div className="bg-white rounded-[32px] shadow-xl p-10 w-full max-w-sm border border-nquoc-border transition-all duration-300 hover:shadow-2xl">
+        <div className="text-center mb-10">
+          <div className="w-16 h-16 bg-nquoc-blue rounded-3xl flex items-center justify-center text-white font-bold text-2xl font-header mx-auto mb-4 shadow-lg shadow-blue-100">
             N
           </div>
-          <h1 className="text-lg font-bold text-nquoc-text font-header">NhiLe HR Culture</h1>
-          <p className="text-sm text-nquoc-muted mt-1">Dev Mode — Chọn role để vào</p>
+          <h1 className="text-2xl font-bold text-nquoc-text font-header tracking-tight">NhiLe HR Culture</h1>
+          <p className="text-sm text-nquoc-muted mt-2 leading-relaxed">
+            Thấu hiểu đội ngũ, kiến tạo nội lực.<br/>
+            <span className="text-[10px] font-medium uppercase tracking-widest text-slate-400 mt-2 inline-block">Demo Mode</span>
+          </p>
         </div>
-        <div className="space-y-2">
+
+        <div className="space-y-3">
+          <p className="text-[10px] font-bold text-nquoc-muted uppercase tracking-wider mb-2 px-1">Chọn vai trò để bắt đầu</p>
           <button
             onClick={() => handleLogin('hr_manager')}
-            className="w-full py-2.5 px-4 bg-red-50 text-red-700 border border-red-200 rounded-xl text-sm font-medium hover:bg-red-100 transition-colors"
+            className="w-full group py-3.5 px-5 bg-red-50 text-red-700 border border-red-100 rounded-2xl text-sm font-semibold hover:bg-red-100 hover:border-red-200 transition-all duration-200 flex items-center justify-between"
           >
-            HR Manager
+            <span>HR Manager</span>
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
           </button>
           <button
             onClick={() => handleLogin('leader')}
-            className="w-full py-2.5 px-4 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl text-sm font-medium hover:bg-blue-100 transition-colors"
+            className="w-full group py-3.5 px-5 bg-blue-50 text-blue-700 border border-blue-100 rounded-2xl text-sm font-semibold hover:bg-blue-100 hover:border-blue-200 transition-all duration-200 flex items-center justify-between"
           >
-            Leader
+            <span>Team Leader</span>
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
           </button>
           <button
             onClick={() => handleLogin('member')}
-            className="w-full py-2.5 px-4 bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-sm font-medium hover:bg-slate-100 transition-colors"
+            className="w-full group py-3.5 px-5 bg-slate-50 text-slate-700 border border-slate-100 rounded-2xl text-sm font-semibold hover:bg-slate-100 hover:border-slate-200 transition-all duration-200 flex items-center justify-between"
           >
-            Thành viên
+            <span>Thành viên</span>
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
           </button>
         </div>
+
+        <p className="text-center text-[10px] text-nquoc-muted mt-8 italic">
+          Giao diện demo tối ưu cho trải nghiệm người dùng Millennial & Gen Z.
+        </p>
       </div>
     </div>
   )

@@ -54,10 +54,10 @@ export function CulturePage({ user }: CulturePageProps) {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+            className={`px-5 py-2.5 rounded-2xl text-sm font-bold transition-all duration-200 ${
               activeTab === tab.key
-                ? 'bg-nquoc-blue text-white'
-                : 'bg-white text-nquoc-muted border border-nquoc-border hover:text-nquoc-text'
+                ? 'bg-nquoc-blue text-white shadow-lg shadow-blue-100 scale-105'
+                : 'bg-white text-nquoc-muted border border-nquoc-border hover:text-nquoc-text hover:bg-slate-50'
             }`}
           >
             {tab.label}
@@ -124,20 +124,20 @@ function StoryCard({ story }: { story: CultureStory }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-nquoc-border p-5 space-y-3">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-nquoc-lead flex items-center justify-center text-white font-bold text-sm">
-          {story.user?.name?.charAt(0) ?? '?'}
+      <div className="bg-white rounded-[32px] border border-nquoc-border p-6 space-y-4 shadow-sm hover:shadow-md transition-all">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-2xl bg-nquoc-lead flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-purple-100">
+            {story.user?.name?.charAt(0) ?? '?'}
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-nquoc-text">{story.user?.name ?? 'Ẩn danh'}</p>
+            <p className="text-[10px] text-nquoc-muted font-medium">{story.team?.name} · {new Date(story.created_at).toLocaleDateString('vi-VN')}</p>
+          </div>
+          <Badge variant={courageVariant[story.courage_level] ?? 'blue'} size="sm" className="font-bold">
+            {courageLabels[story.courage_level]}
+          </Badge>
         </div>
-        <div className="flex-1">
-          <p className="text-sm font-semibold text-nquoc-text">{story.user?.name ?? 'Ẩn danh'}</p>
-          <p className="text-xs text-nquoc-muted">{story.team?.name} · {new Date(story.created_at).toLocaleDateString('vi-VN')}</p>
-        </div>
-        <Badge variant={courageVariant[story.courage_level] ?? 'blue'} size="sm">
-          {courageLabels[story.courage_level]}
-        </Badge>
-      </div>
 
       {/* Tags */}
       <div className="flex gap-2 flex-wrap">
@@ -190,16 +190,16 @@ function ChallengesTab() {
       {/* Weekly */}
       <div>
         <h2 className="text-sm font-semibold text-nquoc-text font-header mb-3">Thử thách tuần này</h2>
-        <div className="bg-white rounded-2xl border border-nquoc-border p-5 space-y-4">
+        <div className="bg-white rounded-[32px] border border-nquoc-border p-6 space-y-5 shadow-sm">
           <div className="flex items-start justify-between gap-4">
-            <p className="text-sm text-nquoc-text leading-relaxed flex-1">{data.weekly.text}</p>
-            <Badge variant="indigo" size="md">{data.weekly.points} điểm</Badge>
+            <p className="text-sm text-nquoc-text leading-relaxed flex-1 font-medium">{data.weekly.text}</p>
+            <Badge variant="indigo" size="md" className="font-bold whitespace-nowrap">{data.weekly.points} XP</Badge>
           </div>
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-nquoc-muted">Đến hết: {new Date(data.weekly.active_until).toLocaleDateString('vi-VN')}</p>
+          <div className="flex items-center justify-between pt-2">
+            <p className="text-[10px] text-nquoc-muted font-bold uppercase tracking-wider">Hết hạn: {new Date(data.weekly.active_until).toLocaleDateString('vi-VN')}</p>
             <button
               onClick={() => setSubmitChallenge(data.weekly)}
-              className="px-4 py-2 bg-nquoc-blue text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition-colors"
+              className="px-6 py-2.5 bg-nquoc-blue text-white rounded-2xl text-xs font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-100"
             >
               Nộp bằng chứng
             </button>

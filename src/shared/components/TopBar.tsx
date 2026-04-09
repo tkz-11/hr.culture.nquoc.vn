@@ -21,13 +21,20 @@ const roleBadgeVariant: Record<UserRole, 'red' | 'blue' | 'slate'> = {
   member: 'slate',
 }
 
-export function TopBar({ user, title, onSwitchRole }: TopBarProps) {
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Chào buổi sáng'
+    if (hour < 18) return 'Chúc bạn buổi chiều tốt lành'
+    return 'Chào buổi tối'
+  }
+
   return (
-    <header className="h-14 border-b border-nquoc-border bg-white flex items-center justify-between px-6 flex-shrink-0">
-      <div>
-        {title && (
-          <h1 className="text-sm font-semibold text-nquoc-text font-header">{title}</h1>
-        )}
+    <header className="h-16 border-b border-nquoc-border bg-white/80 backdrop-blur-md sticky top-0 z-50 flex items-center justify-between px-6 flex-shrink-0">
+      <div className="flex flex-col">
+        <p className="text-[10px] font-bold text-nquoc-muted uppercase tracking-wider">{getGreeting()}, {roleLabels[user.role]}</p>
+        <h1 className="text-base font-bold text-nquoc-text font-header">
+          {user.name} <span className="text-xl inline-block animate-wave ml-1">👋</span>
+        </h1>
       </div>
 
       <div className="flex items-center gap-4">

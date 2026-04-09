@@ -94,12 +94,15 @@ export function RetentionPage({ user }: RetentionPageProps) {
       )}
 
       {/* Radar Grid */}
-      <div className="bg-white rounded-2xl border border-nquoc-border overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-nquoc-border">
-          <h2 className="text-sm font-semibold text-nquoc-text font-header">
-            Bản đồ nhân sự — 30/60/90 Day
-          </h2>
-          <button className="text-xs text-nquoc-blue border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-50 transition-colors">
+      <div className="bg-white rounded-[32px] border border-nquoc-border overflow-hidden shadow-sm">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-nquoc-border">
+          <div>
+            <h2 className="text-base font-bold text-nquoc-text font-header">
+              Bản đồ nhân sự — 30/60/90 Day
+            </h2>
+            <p className="text-[10px] text-nquoc-muted font-medium uppercase tracking-wider mt-0.5">Dựa trên tiến độ hòa nhập & rủi ro bế tắc</p>
+          </div>
+          <button className="text-xs font-semibold text-nquoc-blue border border-blue-200 rounded-xl px-4 py-2 hover:bg-blue-50 transition-all duration-200">
             Xuất báo cáo
           </button>
         </div>
@@ -190,12 +193,12 @@ function SummaryCard({ label, value, variant, icon }: {
   const bgMap = { red: 'bg-red-50', amber: 'bg-amber-50', blue: 'bg-blue-50', slate: 'bg-slate-50' }
   const textMap = { red: 'text-red-600', amber: 'text-amber-600', blue: 'text-blue-600', slate: 'text-slate-600' }
   return (
-    <div className={`${bgMap[variant]} rounded-xl p-4`}>
-      <div className="flex items-center gap-2 mb-1">
-        <span className="text-lg">{icon}</span>
-        <span className="text-xs text-nquoc-muted font-medium">{label}</span>
+    <div className={`${bgMap[variant]} rounded-[28px] p-5 border border-white/50 shadow-sm transition-all hover:shadow-md`}>
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-xl">{icon}</span>
+        <span className="text-[10px] text-nquoc-muted font-bold uppercase tracking-wider">{label}</span>
       </div>
-      <p className={`text-3xl font-bold ${textMap[variant]} font-header`}>{value}</p>
+      <p className={`text-4xl font-extrabold ${textMap[variant]} font-header leading-none tracking-tight`}>{value}</p>
     </div>
   )
 }
@@ -269,13 +272,13 @@ function MemberRow({ member, userRole, onIntervene }: {
         {userRole === 'hr_manager' ? (
           <button
             onClick={onIntervene}
-            className="text-xs font-semibold text-white bg-nquoc-hr px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors"
+            className="text-xs font-bold text-white bg-nquoc-hr px-4 py-2 rounded-xl hover:bg-red-700 shadow-sm shadow-red-100 transition-all active:scale-95"
           >
-            CAN THIỆP
+            CAN THIỆP NGAY
           </button>
         ) : (
-          <button className="text-xs font-semibold text-nquoc-blue border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors">
-            THEO DÕI
+          <button className="text-xs font-bold text-nquoc-blue bg-blue-50/50 border border-blue-100 px-4 py-2 rounded-xl hover:bg-blue-100 hover:text-blue-700 transition-all active:scale-95">
+            Hỗ trợ ngay
           </button>
         )}
       </td>
@@ -293,19 +296,19 @@ function LeaderCard({ metrics, onWarn, onCoach }: {
   const engageLow = (metrics.engage_score ?? 10) < 5
 
   return (
-    <div className="border border-nquoc-border rounded-xl p-4 space-y-3">
+    <div className="bg-white border border-nquoc-border rounded-[28px] p-6 space-y-4 shadow-sm hover:shadow-md transition-all">
       <div className="flex items-start justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-full bg-nquoc-lead flex items-center justify-center text-white font-bold text-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-nquoc-lead flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-purple-100">
             L
           </div>
           <div>
-            <p className="text-sm font-semibold text-nquoc-text">{metrics.leader?.name}</p>
-            <p className="text-xs text-nquoc-muted">{metrics.team?.name} · {metrics.team_size} người</p>
+            <p className="text-sm font-bold text-nquoc-text">{metrics.leader?.name}</p>
+            <p className="text-[10px] text-nquoc-muted font-medium">{metrics.team?.name} · {metrics.team_size} người</p>
           </div>
         </div>
         {metrics.coaching_flag && (
-          <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 font-medium">
+          <span className="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 font-bold uppercase tracking-wider">
             ⚠ Cần coaching
           </span>
         )}

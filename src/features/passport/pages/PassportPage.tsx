@@ -49,16 +49,18 @@ export function PassportPage({ user }: PassportPageProps) {
       </div>
 
       {/* Tab content */}
-      {activeTab === 'member' && <MemberDashboard user={user} />}
-      {activeTab === 'leader' && <LeaderDashboard user={user} />}
-      {activeTab === 'mirror' && (
-        <div className="bg-white rounded-2xl border border-nquoc-border p-12 text-center">
-          <p className="text-4xl mb-3">🔭</p>
-          <h3 className="text-base font-semibold text-nquoc-text font-header">Tính năng đang phát triển</h3>
-          <p className="text-sm text-nquoc-muted mt-1">Bảng đối chiếu chung sẽ ra mắt trong thời gian tới.</p>
-        </div>
-      )}
-      {activeTab === 'train' && <RewriteLab />}
+      <div className="mt-8">
+        {activeTab === 'member' && <MemberDashboard user={user} />}
+        {activeTab === 'leader' && <LeaderDashboard user={user} />}
+        {activeTab === 'mirror' && (
+          <div className="bg-white rounded-[32px] border border-nquoc-border p-16 text-center shadow-sm">
+            <p className="text-5xl mb-4">🔭</p>
+            <h3 className="text-lg font-bold text-nquoc-text font-header">Tính năng đang phát triển</h3>
+            <p className="text-sm text-nquoc-muted mt-2 max-w-sm mx-auto">Bảng đối chiếu chung sẽ ra mắt trong thời gian tới để giúp bạn so sánh chuẩn mực giao tiếp.</p>
+          </div>
+        )}
+        {activeTab === 'train' && <RewriteLab />}
+      </div>
     </div>
   )
 }
@@ -88,31 +90,61 @@ function MemberDashboard({ user: _user }: { user: AuthUser }) {
   return (
     <div className="space-y-5">
       {/* Header card */}
-      <div className="bg-nquoc-blue rounded-2xl p-5 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium opacity-80">Giao tiếp thẳng thắn hôm nay</p>
-            <p className="text-2xl font-bold font-header mt-1">Culture XP: {profile.culture_xp}</p>
+      <div className="relative overflow-hidden bg-nquoc-blue rounded-[32px] p-8 text-white shadow-xl shadow-blue-100">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none" />
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest opacity-80 mb-1">Giao tiếp thẳng thắn hôm nay</p>
+              <h2 className="text-3xl font-extrabold font-header">Culture XP: {profile.culture_xp}</h2>
+            </div>
+            <div className="text-right">
+              <Badge variant="emerald" size="md" className="font-bold border-white/20">🔥 {profile.streak_days} ngày liên tiếp</Badge>
+            </div>
           </div>
-          <div className="text-right">
-            <Badge variant="emerald" size="md">{profile.streak_days} ngày liên tiếp 🔥</Badge>
+          
+          {/* XP Progress bar */}
+          <div className="mb-6">
+            <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider mb-2 opacity-80">
+              <span>Cấp độ: Người học việc</span>
+              <span>{profile.culture_xp % 100}/100 XP tới cấp tiếp theo</span>
+            </div>
+            <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-white rounded-full transition-all duration-1000" 
+                style={{ width: `${profile.culture_xp % 100}%` }}
+              />
+            </div>
           </div>
-        </div>
-        <div className="mt-4 flex gap-3">
-          <button
-            onClick={() => setShowTraining(true)}
-            className="px-4 py-2 bg-white text-nquoc-blue rounded-xl text-sm font-semibold hover:bg-blue-50 transition-colors"
-          >
-            Mở bài luyện
-          </button>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowTraining(true)}
+              className="px-6 py-2.5 bg-white text-nquoc-blue rounded-2xl text-sm font-bold hover:bg-blue-50 transition-all active:scale-95 shadow-lg"
+            >
+              Mở bài luyện tập
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Heatmap */}
-      <div className="bg-white rounded-2xl border border-nquoc-border p-5">
-        <h2 className="text-sm font-semibold text-nquoc-text font-header mb-4">
-          Bản đồ nhiệt văn hóa — 14 ngày gần nhất
-        </h2>
+      <div className="bg-white rounded-[32px] border border-nquoc-border p-8 shadow-sm">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-base font-bold text-nquoc-text font-header">
+            Bản đồ nhiệt văn hóa — 14 ngày gần nhất
+          </h2>
+          <div className="flex items-center gap-4">
+             <div className="flex items-center gap-1.5">
+               <div className="w-3 h-3 rounded-sm bg-blue-100" />
+               <span className="text-[10px] font-medium text-nquoc-muted">Low</span>
+             </div>
+             <div className="flex items-center gap-1.5">
+               <div className="w-3 h-3 rounded-sm bg-blue-600" />
+               <span className="text-[10px] font-medium text-nquoc-muted">High</span>
+             </div>
+          </div>
+        </div>
         <HeatmapGrid heatmap={heatmap} />
       </div>
 
@@ -178,10 +210,10 @@ function HeatmapGrid({ heatmap }: { heatmap: CommHeatmapEntry[] }) {
 // ── Stat Card ──
 function StatCard({ label, value, unit }: { label: string; value: string; unit: string }) {
   return (
-    <div className="bg-white rounded-xl border border-nquoc-border p-4">
-      <p className="text-[11px] text-nquoc-muted mb-1">{label}</p>
-      <p className="text-2xl font-bold text-nquoc-text font-header">
-        {value}<span className="text-sm font-normal text-nquoc-muted">{unit}</span>
+    <div className="bg-white rounded-3xl border border-nquoc-border p-6 shadow-sm hover:shadow-md transition-all">
+      <p className="text-[10px] font-bold text-nquoc-muted uppercase tracking-wider mb-2">{label}</p>
+      <p className="text-3xl font-extrabold text-nquoc-text font-header leading-none">
+        {value}<span className="text-sm font-normal text-nquoc-muted ml-0.5">{unit}</span>
       </p>
     </div>
   )
@@ -196,39 +228,45 @@ function SilenceCostCalc() {
   const wastedHours = (days * people * severity * 0.5).toFixed(1)
 
   return (
-    <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5">
-      <h2 className="text-sm font-semibold text-amber-800 font-header mb-4">Chi phí im lặng</h2>
-      <div className="grid grid-cols-3 gap-4 mb-4">
+    <div className="bg-amber-50/50 border border-amber-100 rounded-[32px] p-8 shadow-sm">
+      <div className="flex items-center gap-2 mb-6">
+        <span className="text-xl">💰</span>
+        <h2 className="text-base font-bold text-amber-900 font-header uppercase tracking-tight">Chi phí im lặng</h2>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
         <div>
-          <label className="text-xs text-amber-700 font-medium block mb-1">Số ngày giữ im</label>
+          <label className="text-[10px] text-amber-700 font-bold uppercase tracking-wider block mb-2 px-1">Số ngày giữ im</label>
           <input
             type="number" min={1} max={30} value={days}
             onChange={(e) => setDays(Number(e.target.value))}
-            className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none"
+            className="w-full border border-amber-200 rounded-2xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-200 transition-all font-medium"
           />
         </div>
         <div>
-          <label className="text-xs text-amber-700 font-medium block mb-1">Số người ảnh hưởng</label>
+          <label className="text-[10px] text-amber-700 font-bold uppercase tracking-wider block mb-2 px-1">Số người ảnh hưởng</label>
           <input
             type="number" min={1} max={100} value={people}
             onChange={(e) => setPeople(Number(e.target.value))}
-            className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none"
+            className="w-full border border-amber-200 rounded-2xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-200 transition-all font-medium"
           />
         </div>
         <div>
-          <label className="text-xs text-amber-700 font-medium block mb-1">Mức độ (1-5)</label>
+          <label className="text-[10px] text-amber-700 font-bold uppercase tracking-wider block mb-2 px-1">Mức độ bế tắc (1-5)</label>
           <input
             type="range" min={1} max={5} value={severity}
             onChange={(e) => setSeverity(Number(e.target.value))}
-            className="w-full mt-2"
+            className="w-full mt-3 h-2 bg-amber-200 rounded-lg appearance-none cursor-pointer accent-amber-600"
           />
-          <div className="text-xs text-amber-600 text-center">{severity}/5</div>
+          <div className="text-[10px] font-bold text-amber-600 text-center mt-2 uppercase tracking-widest">{severity}/5 - {severity > 3 ? 'Nghiêm trọng' : 'Trung bình'}</div>
         </div>
       </div>
-      <div className="bg-white rounded-xl p-3 text-center">
-        <p className="text-xs text-amber-700">
-          Im lặng {days} ngày = <span className="font-bold text-red-600 text-base">{wastedHours} giờ</span> lãng phí
-          &nbsp;|&nbsp; Nói sớm = <span className="font-bold text-emerald-600">~15 phút</span>
+      <div className="bg-white rounded-[24px] p-5 text-center shadow-inner border border-amber-100 flex flex-col sm:flex-row items-center justify-center gap-2">
+        <p className="text-sm text-amber-900 font-medium">
+          Im lặng {days} ngày = <span className="font-extrabold text-red-600 text-lg">{wastedHours} giờ</span> lãng phí
+        </p>
+        <span className="hidden sm:inline text-amber-200">|</span>
+        <p className="text-sm text-emerald-700 font-bold">
+          Chỉ mất <span className="underline decoration-wavy">~15 phút</span> nếu nói thẳng sớm!
         </p>
       </div>
     </div>
