@@ -7,6 +7,7 @@ import { LineChart } from '../../../shared/components/LineChart'
 import { RadarChart } from '../../../shared/components/RadarChart'
 import { HRPassportDashboard } from '../components/HRPassportDashboard'
 import { Skeleton } from '../../../shared/components/Skeleton'
+import { CultureHeatmap } from '../../../shared/components/CultureHeatmap'
 
 interface PassportPageProps {
   user: AuthUser
@@ -109,7 +110,8 @@ function MemberDashboard({ user: _user }: { user: AuthUser }) {
   )
   if (!data) return null
 
-  const { profile, heatmap } = data
+  const { profile } = data
+  const streakDays = profile.streak_days
 
   return (
     <div className="space-y-5">
@@ -200,146 +202,11 @@ function MemberDashboard({ user: _user }: { user: AuthUser }) {
         </div>
       </div>
 
-      {/* Culture Heatmap */}
-      <div className="bg-white rounded-[32px] border border-nquoc-border p-8 shadow-card">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <p className="text-[10px] font-bold text-nquoc-muted uppercase tracking-widest">Hoạt động 14 ngày</p>
-            <h2 className="text-base font-bold text-nquoc-text font-header mt-0.5">Bản đồ nhiệt văn hóa</h2>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-sm bg-indigo-100" />
-              <span className="text-[10px] font-medium text-nquoc-muted">Thấp</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-sm bg-indigo-600" />
-              <span className="text-[10px] font-medium text-nquoc-muted">Cao</span>
-            </div>
-          </div>
-        </div>
-        <HeatmapGrid heatmap={heatmap} />
-      </div>
+      {/* Culture Heatmap — upgraded */}
+      <CultureHeatmap streakDays={streakDays} />
 
-      {/* Silence Cost Calculator */}
-      <SilenceCostCalc />
 
       {showTraining && <TrainingSlides onClose={() => setShowTraining(false)} />}
-    </div>
-  )
-}
-
-// ── Heatmap Grid ──
-function HeatmapGrid({ heatmap }: { heatmap: CommHeatmapEntry[] }) {
-  const rows = [
-    { label: 'Tuân thủ Deadline', key: 'deadline_met' as const, type: 'bool' },
-    { label: 'Tương tác WYFL', key: 'wyfl_done' as const, type: 'bool' },
-    { label: 'Không dùng từ cấm', key: 'banned_word_count' as const, type: 'banned' },
-  ]
-
-  return (
-    <div className="space-y-4">
-      {rows.map((row) => (
-        <div key={row.key} className="flex items-center gap-4">
-          <span className="text-xs text-nquoc-muted font-medium w-44 flex-shrink-0">{row.label}</span>
-          <div className="flex gap-1.5 flex-wrap">
-            {heatmap.map((entry, i) => {
-              let intensity = 0
-              if (row.type === 'bool') {
-                intensity = entry[row.key as 'deadline_met' | 'wyfl_done'] ? 1 : 0.12
-              } else {
-                const count = entry.banned_word_count
-                intensity = count === 0 ? 1 : count <= 2 ? 0.5 : 0.12
-              }
-              return (
-                <div
-                  key={i}
-                  title={entry.date}
-                  className="w-5 h-5 rounded-md transition-all hover:scale-110"
-                  style={{ backgroundColor: `rgba(79, 70, 229, ${intensity})` }}
-                />
-              )
-            })}
-          </div>
-        </div>
-      ))}
-      <div className="flex items-center justify-between text-[10px] text-nquoc-muted pt-2 border-t border-nquoc-border">
-        <span className="font-bold">← 14 NGÀY TRƯỚC</span>
-        <span>THẤP ←→ CAO</span>
-        <span className="font-bold">HÔM NAY →</span>
-      </div>
-    </div>
-  )
-}
-
-// ── Silence Cost Calculator ──
-function SilenceCostCalc() {
-  const [days, setDays] = useState(3)
-  const [people, setPeople] = useState(5)
-  const [severity, setSeverity] = useState(3)
-
-  const wastedHours = (days * people * severity * 0.5).toFixed(1)
-  const directMinutes = 15
-
-  return (
-    <div className="bg-amber-50 border border-amber-100 rounded-[32px] p-8 shadow-card">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center text-xl">💰</div>
-        <div>
-          <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Công cụ tính toán</p>
-          <h2 className="text-base font-bold text-amber-900 font-header">Chi phí im lặng</h2>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-7">
-        <div>
-          <label className="text-[10px] text-amber-700 font-bold uppercase tracking-wider block mb-2">Số ngày giữ im</label>
-          <input type="number" min={1} max={30} value={days}
-            onChange={(e) => setDays(Number(e.target.value))}
-            className="w-full border-2 border-amber-200 rounded-2xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-300 transition-all font-bold text-amber-900"
-          />
-        </div>
-        <div>
-          <label className="text-[10px] text-amber-700 font-bold uppercase tracking-wider block mb-2">Số người ảnh hưởng</label>
-          <input type="number" min={1} max={100} value={people}
-            onChange={(e) => setPeople(Number(e.target.value))}
-            className="w-full border-2 border-amber-200 rounded-2xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-300 transition-all font-bold text-amber-900"
-          />
-        </div>
-        <div>
-          <label className="text-[10px] text-amber-700 font-bold uppercase tracking-wider block mb-2">
-            Mức độ bế tắc: <span className="text-amber-600">{severity}/5</span>
-          </label>
-          <input type="range" min={1} max={5} value={severity}
-            onChange={(e) => setSeverity(Number(e.target.value))}
-            className="w-full mt-3 h-2 rounded-lg cursor-pointer accent-amber-600"
-          />
-          <div className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mt-2 text-center">
-            {severity > 3 ? '🔴 Nghiêm trọng' : severity > 1 ? '🟡 Trung bình' : '🟢 Nhẹ'}
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-[28px] p-6 border border-amber-100 shadow-inner">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-          <div>
-            <p className="text-[10px] font-bold text-nquoc-muted uppercase tracking-wider mb-1">Im lặng {days} ngày tốn</p>
-            <p className="text-3xl font-extrabold text-rose-600 font-header">{wastedHours}h</p>
-            <p className="text-xs text-nquoc-muted mt-1">thời gian lãng phí</p>
-          </div>
-          <div className="flex items-center justify-center">
-            <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-2xl">VS</div>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-nquoc-muted uppercase tracking-wider mb-1">Nói thẳng chỉ cần</p>
-            <p className="text-3xl font-extrabold text-emerald-600 font-header">{directMinutes}p</p>
-            <p className="text-xs text-nquoc-muted mt-1">để nói rõ vấn đề</p>
-          </div>
-        </div>
-        <p className="text-center text-sm font-bold text-amber-800 mt-5 pt-4 border-t border-amber-100">
-          🚀 Một câu nói thẳng sớm = tiết kiệm <span className="text-rose-600">{wastedHours}h</span> cho cả team!
-        </p>
-      </div>
     </div>
   )
 }

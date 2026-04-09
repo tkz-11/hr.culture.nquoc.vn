@@ -10,39 +10,57 @@ import { NBotCoach } from './shared/components/NBotCoach'
 import { AppRoutes } from './routes'
 import type { AuthUser } from './shared/types'
 
-// Dev-only mock auth để chạy không cần Supabase
-function useMockAuth() {
+function getMockUser(): AuthUser | null {
   const stored = localStorage.getItem('nquoc-dev-user')
-  if (stored) {
-    try {
-      return JSON.parse(stored) as AuthUser
-    } catch {
-      return null
-    }
-  }
-  return null
+  if (!stored) return null
+  try { return JSON.parse(stored) as AuthUser } catch { return null }
 }
 
 export default function App() {
-  const { user: supabaseUser, loading, switchRole } = useAuth()
+  const { user: supabaseUser, loading, switchRole: supabaseSwitchRole } = useAuth()
   const { toasts, addToast, removeToast } = useToast()
   const isVercelPreview = window.location.hostname.includes('vercel.app')
   const isDemoMode = new URLSearchParams(window.location.search).has('demo')
-  const mockUser = (import.meta.env.DEV || isVercelPreview || isDemoMode) ? useMockAuth() : null
+  const isDemoEnv = import.meta.env.DEV || isVercelPreview || isDemoMode
 
-  const user = supabaseUser ?? mockUser
+  // Unified active user state — works for both mock and real auth
+  const [activeUser, setActiveUser] = React.useState<AuthUser | null>(() => {
+    return supabaseUser ?? (isDemoEnv ? getMockUser() : null)
+  })
+
+  // Sync when supabase auth resolves
+  React.useEffect(() => {
+    if (supabaseUser) setActiveUser(supabaseUser)
+  }, [supabaseUser])
+
+  // Role switcher — works for BOTH mock and real auth
+  const switchRole = (role: import('./shared/types').UserRole) => {
+    localStorage.setItem('nquoc-dev-role', role)
+    if (isDemoEnv) {
+      // Update mock user in localStorage
+      const current = getMockUser()
+      if (current) {
+        const updated = { ...current, role }
+        localStorage.setItem('nquoc-dev-user', JSON.stringify(updated))
+        setActiveUser(updated)
+      }
+    }
+    // Also try supabase switchRole if real user
+    supabaseSwitchRole(role)
+    if (activeUser && !supabaseUser) {
+      setActiveUser(u => u ? { ...u, role } : u)
+    }
+  }
 
   // Expose addToast globally
   React.useEffect(() => {
     ;(window as unknown as Record<string, unknown>).__addToast = addToast
   }, [addToast])
 
-  if (loading && !mockUser) return <PageLoading />
+  if (loading && !activeUser) return <PageLoading />
 
-  if (!user) {
-    if (import.meta.env.DEV || isVercelPreview || isDemoMode) {
-      return <DevModeLogin />
-    }
+  if (!activeUser) {
+    if (isDemoEnv) return <DevModeLogin />
     window.location.href = 'https://nquoc.vn/login'
     return null
   }
@@ -50,15 +68,15 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className="flex min-h-screen bg-nquoc-bg">
-        <Sidebar user={user} />
+        <Sidebar user={activeUser} />
         <div className="flex-1 flex flex-col min-w-0">
-          <TopBar user={user} onSwitchRole={switchRole} />
+          <TopBar user={activeUser} onSwitchRole={switchRole} />
           <main className="flex-1 overflow-auto">
-            <AppRoutes user={user} />
+            <AppRoutes user={activeUser} />
           </main>
         </div>
       </div>
-      <NBotCoach user={user} />
+      <NBotCoach user={activeUser} />
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </BrowserRouter>
   )
