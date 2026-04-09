@@ -3,7 +3,6 @@ import { Badge } from './Badge'
 
 interface TopBarProps {
   user: AuthUser
-  title?: string
   onSwitchRole?: (role: UserRole) => void
 }
 
@@ -21,6 +20,7 @@ const roleBadgeVariant: Record<UserRole, 'red' | 'blue' | 'slate'> = {
   member: 'slate',
 }
 
+export function TopBar({ user, onSwitchRole }: TopBarProps) {
   const getGreeting = () => {
     const hour = new Date().getHours()
     if (hour < 12) return 'Chào buổi sáng'
