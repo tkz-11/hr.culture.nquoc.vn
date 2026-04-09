@@ -37,7 +37,10 @@ export default function App() {
   if (loading && !mockUser) return <PageLoading />
 
   if (!user) {
-    if (import.meta.env.DEV) {
+    const isVercelPreview = window.location.hostname.includes('vercel.app')
+    const isDemoMode = new URLSearchParams(window.location.search).has('demo')
+
+    if (import.meta.env.DEV || isVercelPreview || isDemoMode) {
       return <DevModeLogin />
     }
     window.location.href = 'https://nquoc.vn/login'
