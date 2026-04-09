@@ -6,29 +6,32 @@ const config: Config = {
     extend: {
       colors: {
         nquoc: {
-          // Primary — Indigo (upgraded from generic blue)
-          blue:     '#4f46e5',
-          indigo:   '#4f46e5',
+          // Primary — Deep Blue
+          blue:         '#1d4ed8',
+          indigo:       '#4f46e5',
           // Backgrounds
-          bg:       '#f6f7fb',
-          sidebar:  '#ffffff',
+          bg:           '#f1f5f9',
+          surface:      '#ffffff',
+          sidebar:      '#0f172a',   // Dark navy sidebar
+          sidebarText:  '#94a3b8',
+          sidebarActive:'#ffffff',
           // Text
-          text:     '#1e293b',
-          muted:    '#64748b',
+          text:         '#0f172a',
+          muted:        '#475569',
           // Borders
-          border:   '#e8ecf4',
+          border:       '#e2e8f0',
           // States
-          active:   '#eef2ff',
-          hover:    '#f0f4ff',
+          active:       '#1e3a8a',
+          hover:        '#f0f4ff',
           // Role colors
-          hr:       '#e11d48',    // Rose — Stress/Risk
-          fit:      '#f43f5e',
-          lead:     '#8b5cf6',    // Violet — Leader  
+          hr:           '#b91c1c',   // Deep red HR accent
+          fit:          '#e11d48',
+          lead:         '#6d28d9',   // Deep violet leader
           // Semantic
-          rose:     '#e11d48',
-          emerald:  '#10b981',
-          fuchsia:  '#d946ef',
-          amber:    '#f59e0b',
+          rose:         '#e11d48',
+          emerald:      '#10b981',
+          fuchsia:      '#d946ef',
+          amber:        '#f59e0b',
         },
       },
       fontFamily: {

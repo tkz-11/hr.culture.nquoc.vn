@@ -15,16 +15,16 @@ const roleLabels: Record<UserRole, string> = {
   member: 'Thành viên',
 }
 
-const roleBadgeVariant: Record<UserRole, 'red' | 'blue' | 'slate'> = {
+const roleBadgeVariant: Record<UserRole, 'red' | 'blue' | 'indigo' | 'slate'> = {
   hr_manager: 'red',
-  leader: 'blue',
+  leader: 'indigo',
   member: 'slate',
 }
 
 const roleGradient: Record<UserRole, string> = {
-  hr_manager: 'from-rose-500 to-pink-600',
-  leader:     'from-violet-500 to-purple-600',
-  member:     'from-indigo-500 to-blue-600',
+  hr_manager: 'from-red-700 to-red-800',
+  leader:     'from-violet-700 to-purple-800',
+  member:     'from-slate-700 to-slate-900',
 }
 
 const getGreeting = () => {

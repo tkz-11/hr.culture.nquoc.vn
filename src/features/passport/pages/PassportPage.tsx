@@ -1,13 +1,12 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
-import type { AuthUser, PassportProfile, CommHeatmapEntry, AnalyzeResult, RewriteResult, LeaderIntegrity } from '../../../shared/types'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import type { AuthUser, PassportProfile, CommHeatmapEntry, LeaderIntegrity } from '../../../shared/types'
 import { passportService } from '../services/passport.service'
 import { LoadingSpinner } from '../../../shared/components/LoadingSpinner'
-import { Badge } from '../../../shared/components/Badge'
+import { HRPassportDashboard } from '../components/HRPassportDashboard'
+import { CultureHeatmap } from '../../../shared/components/CultureHeatmap'
 import { LineChart } from '../../../shared/components/LineChart'
 import { RadarChart } from '../../../shared/components/RadarChart'
-import { HRPassportDashboard } from '../components/HRPassportDashboard'
-import { Skeleton } from '../../../shared/components/Skeleton'
-import { CultureHeatmap } from '../../../shared/components/CultureHeatmap'
+import { useCountUp } from '../../../shared/hooks/useCountUp'
 
 interface PassportPageProps {
   user: AuthUser
@@ -16,304 +15,117 @@ interface PassportPageProps {
 type TabKey = 'member' | 'leader' | 'mirror' | 'train' | 'hr_dashboard'
 
 const tabs: { key: TabKey; label: string; icon: string; roles?: string[] }[] = [
-  { key: 'member', label: 'Bảng thành viên', icon: '👤' },
-  { key: 'leader', label: 'Bảng leader', icon: '🎖️', roles: ['leader', 'hr_manager'] },
-  { key: 'hr_dashboard', label: 'Quản trị HR', icon: '📊', roles: ['hr_manager'] },
-  { key: 'mirror', label: 'Đối chiếu', icon: '🔭' },
-  { key: 'train', label: 'Rewrite Lab', icon: '✍️' },
+  { key: 'member',       label: 'Cá nhân',         icon: '👤' },
+  { key: 'leader',       label: 'Quản lý',          icon: '🎖️',  roles: ['leader', 'hr_manager'] },
+  { key: 'mirror',       label: 'Gương Soi',        icon: '🔍',  roles: ['leader', 'hr_manager'] },
+  { key: 'hr_dashboard', label: 'Góc nhìn HR',      icon: '📊',  roles: ['hr_manager'] },
+  { key: 'train',        label: 'Phòng Tập Giao Tiếp', icon: '✍️' },
 ]
 
-export function PassportPage({ user }: PassportPageProps) {
-  const [activeTab, setActiveTab] = useState<TabKey>('member')
+// ─── Pattern libraries ───────────────────────────────────────────
+const SILENCE_PATTERNS = [
+  'không sao', 'bình thường thôi', 'ok em', 'dạ được',
+  'em sẽ cố', 'để em xem', 'có lẽ', 'thôi được',
+  'không dám', 'ngại nói', 'sợ offend', 'chờ xem',
+]
+const VAGUE_PATTERNS = [
+  'sẽ cố gắng', 'sẽ làm', 'sẽ xem', 'hy vọng',
+  'mong là', 'có thể', 'thử xem', 'cố thôi',
+]
+const DIRECT_PATTERNS = [
+  'tôi không thể', 'tôi không đồng ý', 'cụ thể là',
+  'theo tôi thấy', 'tôi cần', 'deadline là', 'bước 1',
+  'tôi sẽ gửi lúc', 'vấn đề là', 'giải pháp là',
+  'tôi hiểu nhưng', 'tôi cần làm rõ',
+]
+const FACE_SAVING_PATTERNS = [
+  'thôi không sao', 'để sau tính', 'không cần thiết',
+  'ngại quá', 'kỳ cục lắm', 'người ta nghĩ gì',
+]
 
-  const visibleTabs = tabs.filter((t) => !t.roles || t.roles.includes(user.role))
-
-  return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 rounded-xl bg-violet-100 flex items-center justify-center text-sm">🗂️</div>
-            <p className="text-[10px] font-bold text-nquoc-muted uppercase tracking-widest">HR Tool</p>
-          </div>
-          <h1 className="text-2xl font-bold text-nquoc-text font-header">Communication Passport</h1>
-          <p className="text-sm text-nquoc-muted mt-1">Rèn luyện giao tiếp thẳng thắn · Xây dựng văn hóa nói thật trong tổ chức</p>
-        </div>
-      </div>
-
-      {/* Tab nav — Premium pill style */}
-      <div className="flex gap-1.5 flex-wrap">
-        {visibleTabs.map((tab) => (
-          <button
-            key={tab.key}
-            id={`tab-${tab.key}`}
-            onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all duration-200 ${
-              activeTab === tab.key
-                ? 'bg-gradient-indigo text-white shadow-nquoc scale-105'
-                : 'bg-white text-nquoc-muted border border-nquoc-border hover:text-nquoc-text hover:bg-nquoc-hover'
-            }`}
-          >
-            <span className="text-base leading-none">{tab.icon}</span>
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab content */}
-      <div className="animate-fade-in" key={activeTab}>
-        {activeTab === 'member' && <MemberDashboard user={user} />}
-        {activeTab === 'leader' && <LeaderDashboard user={user} />}
-        {activeTab === 'mirror' && (
-          <div className="bg-white rounded-[32px] border border-nquoc-border p-16 text-center shadow-card">
-            <div className="text-6xl mb-5 animate-float inline-block">🔭</div>
-            <h3 className="text-xl font-bold text-nquoc-text font-header">Tính năng đang phát triển</h3>
-            <p className="text-sm text-nquoc-muted mt-3 max-w-sm mx-auto leading-relaxed">
-              Bảng đối chiếu chung sẽ ra mắt sớm để so sánh chuẩn mực giao tiếp giữa các team.
-            </p>
-          </div>
-        )}
-        {activeTab === 'train' && <RewriteLab />}
-        {activeTab === 'hr_dashboard' && <HRPassportDashboard />}
-      </div>
-    </div>
-  )
+const REWRITE_RULES: Record<string, string> = {
+  'sẽ cố gắng hoàn thành': 'sẽ hoàn thành và gửi lúc 17:00 hôm nay',
+  'có lẽ ok': 'được, tôi xác nhận',
+  'để em xem': 'tôi sẽ kiểm tra và phản hồi trước 15:00 hôm nay',
+  'không biết': 'tôi cần thêm thông tin về phần còn thiếu. Bạn có thể gửi rõ yêu cầu đầu ra?',
+  'thôi được': 'tôi đồng ý với điều kiện chúng ta chốt lại bằng văn bản',
+  'không sao': 'Tôi thấy có điểm chưa hợp lý tại...',
+  'sẽ cố gắng': 'Tôi cam kết hoàn thành vào [Thứ/Giờ]',
+  'hy vọng': 'Hãy xác nhận chính xác thời gian',
+  'bình thường': 'Thực tế tôi mong đợi...',
 }
 
-// ── Member Dashboard ──
-function MemberDashboard({ user: _user }: { user: AuthUser }) {
-  const [data, setData] = useState<{
-    profile: PassportProfile
-    heatmap: CommHeatmapEntry[]
-    scenarios_done: number
-  } | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [showTraining, setShowTraining] = useState(false)
+type PatternGroup = 'silence' | 'vague' | 'direct' | 'face'
 
-  useEffect(() => {
-    passportService.getMe().then((d) => {
-      setData(d)
-      setLoading(false)
-    })
-  }, [])
+function parseHighlights(text: string) {
+  const all: Array<{ term: string; group: PatternGroup }> = [
+    ...SILENCE_PATTERNS.map(term => ({ term, group: 'silence' as PatternGroup })),
+    ...VAGUE_PATTERNS.map(term => ({ term, group: 'vague' as PatternGroup })),
+    ...DIRECT_PATTERNS.map(term => ({ term, group: 'direct' as PatternGroup })),
+    ...FACE_SAVING_PATTERNS.map(term => ({ term, group: 'face' as PatternGroup })),
+  ]
 
-  if (loading) return (
-    <div className="space-y-4">
-      <Skeleton className="h-48 rounded-[32px]" />
-      <div className="grid grid-cols-3 gap-4">
-        <Skeleton className="h-24 rounded-[28px]" />
-        <Skeleton className="h-24 rounded-[28px]" />
-        <Skeleton className="h-24 rounded-[28px]" />
-      </div>
-    </div>
-  )
-  if (!data) return null
+  const lower = text.toLowerCase()
+  const ranges: Array<{ start: number; end: number; group: PatternGroup }> = []
 
-  const { profile } = data
-  const streakDays = profile.streak_days
+  all.forEach(item => {
+    let idx = lower.indexOf(item.term)
+    while (idx !== -1) {
+      ranges.push({ start: idx, end: idx + item.term.length, group: item.group })
+      idx = lower.indexOf(item.term, idx + item.term.length)
+    }
+  })
 
-  return (
-    <div className="space-y-5">
-      {/* Hero XP Card */}
-      <div className="relative overflow-hidden bg-gradient-indigo rounded-[32px] p-8 text-white shadow-nquoc-lg noise">
-        <div className="absolute -top-16 -right-16 w-56 h-56 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-purple-400/20 rounded-full blur-2xl pointer-events-none" />
+  ranges.sort((a, b) => a.start - b.start || b.end - a.end)
+  const merged: typeof ranges = []
+  ranges.forEach(r => {
+    const last = merged[merged.length - 1]
+    if (!last || r.start >= last.end) merged.push(r)
+  })
 
-        <div className="relative z-10">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Culture Score</p>
-              <h2 className="text-4xl font-extrabold font-header">{profile.culture_xp} <span className="text-xl font-bold opacity-60">XP</span></h2>
-              <div className="flex items-center gap-3 mt-2">
-                <Badge variant="emerald" size="sm" className="bg-white/20 border-white/20 text-white font-bold">
-                  🔥 {profile.streak_days} ngày liên tiếp
-                </Badge>
-                <p className="text-xs opacity-70">Cấp: Người học việc</p>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowTraining(true)}
-                className="px-5 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-2xl text-sm font-bold border border-white/20 transition-all active:scale-95 backdrop-blur-sm"
-              >
-                📖 Bài luyện tập
-              </button>
-            </div>
-          </div>
-
-          {/* Progress bar */}
-          <div className="mt-6">
-            <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider mb-2 opacity-70">
-              <span>Tiến trình cấp độ</span>
-              <span>{profile.culture_xp % 100}/100 XP</span>
-            </div>
-            <div className="w-full h-2.5 bg-white/20 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-white rounded-full transition-all duration-1000"
-                style={{ width: `${profile.culture_xp % 100}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Grid + Safety Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-1 space-y-3">
-          {[
-            { label: 'Điểm giao tiếp', value: profile.directness_score.toFixed(1), unit: '/10', color: 'text-indigo-600', bg: 'bg-indigo-50', icon: '🎯' },
-            { label: 'Streak hiện tại', value: String(profile.streak_days), unit: 'ngày', color: 'text-amber-600', bg: 'bg-amber-50', icon: '🔥' },
-            { label: 'Kịch bản hoàn thành', value: String(data.scenarios_done), unit: 'buổi', color: 'text-emerald-600', bg: 'bg-emerald-50', icon: '🎭' },
-          ].map((stat) => (
-            <div key={stat.label} className={`${stat.bg} rounded-[24px] p-5 border border-white card-lift`}>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-base">{stat.icon}</span>
-                <p className="text-[10px] font-bold text-nquoc-muted uppercase tracking-wider">{stat.label}</p>
-              </div>
-              <p className={`text-3xl font-extrabold font-header leading-none ${stat.color}`}>
-                {stat.value}<span className="text-sm font-normal text-nquoc-muted ml-1">{stat.unit}</span>
-              </p>
-            </div>
-          ))}
-        </div>
-
-        <div className="lg:col-span-2 bg-white rounded-[32px] border border-nquoc-border p-7 shadow-card">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <p className="text-[10px] font-bold text-nquoc-muted uppercase tracking-widest">Biểu đồ xu hướng</p>
-              <h3 className="text-base font-bold text-nquoc-text font-header mt-0.5">Chỉ số an toàn tâm lý</h3>
-            </div>
-            <Badge variant="emerald" size="sm">7 ngày gần nhất</Badge>
-          </div>
-          <div className="h-[190px]">
-            <LineChart
-              labels={['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']}
-              datasets={[{
-                label: 'Safety Index',
-                data: [7.2, 7.5, 7.1, 7.8, 8.2, 8.0, 8.5],
-                color: '#10b981',
-                fill: true,
-              }]}
-              max={10}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Culture Heatmap — upgraded */}
-      <CultureHeatmap streakDays={streakDays} />
-
-
-      {showTraining && <TrainingSlides onClose={() => setShowTraining(false)} />}
-    </div>
-  )
+  const segments: Array<{ text: string; group?: PatternGroup }> = []
+  let cursor = 0
+  merged.forEach(r => {
+    if (r.start > cursor) segments.push({ text: text.slice(cursor, r.start) })
+    segments.push({ text: text.slice(r.start, r.end), group: r.group })
+    cursor = r.end
+  })
+  if (cursor < text.length) segments.push({ text: text.slice(cursor) })
+  return segments
 }
 
-// ── Leader Dashboard ──
-function LeaderDashboard({ user }: { user: AuthUser }) {
-  const [leaderData, setLeaderData] = useState<{
-    integrity: LeaderIntegrity
-    vague_phrases_this_week: string[]
-    improvement_suggestions: string[]
-  } | null>(null)
+function buildProfessionalRewrite(text: string): string {
+  let rewritten = text.trim()
+  const lower = rewritten.toLowerCase()
 
-  useEffect(() => {
-    passportService.getLeaderProfile(user.id).then(setLeaderData)
-  }, [user.id])
+  Object.entries(REWRITE_RULES).forEach(([key, value]) => {
+    if (lower.includes(key)) rewritten = rewritten.replace(new RegExp(key, 'gi'), value)
+  })
 
-  if (!leaderData) return <LoadingSpinner />
+  VAGUE_PATTERNS.forEach(p => {
+    rewritten = rewritten.replace(new RegExp(p, 'gi'), 'tôi sẽ')
+  })
+  SILENCE_PATTERNS.forEach(p => {
+    rewritten = rewritten.replace(new RegExp(p, 'gi'), 'tôi cần nêu rõ')
+  })
+  FACE_SAVING_PATTERNS.forEach(p => {
+    rewritten = rewritten.replace(new RegExp(p, 'gi'), 'tôi sẽ nói thẳng để cùng xử lý')
+  })
 
-  const score = (leaderData.integrity.integrity_score * 100).toFixed(0)
-
-  return (
-    <div className="space-y-5">
-      {/* Score Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-violet-600 to-purple-700 rounded-[32px] p-8 text-white shadow-nquoc-lg noise">
-        <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-        <div className="relative z-10 flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest opacity-70 mb-1">
-              Trước khi xem data của team — đây là data của bạn.
-            </p>
-            <p className="text-5xl font-extrabold font-header">{score} <span className="text-xl font-bold opacity-60">/ 100</span></p>
-            <p className="text-sm opacity-80 mt-1">Điểm liêm chính của leader</p>
-          </div>
-          <div className="glass rounded-2xl px-6 py-4 text-center">
-            <p className="text-[10px] font-bold uppercase tracking-wider opacity-70 mb-1">Xếp hạng</p>
-            <p className="text-2xl font-bold">{Number(score) >= 70 ? '🥇 Tốt' : Number(score) >= 50 ? '🥈 Khá' : '🥉 Cần cải thiện'}</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Integrity Radar */}
-        <div className="bg-white rounded-[32px] border border-nquoc-border p-8 shadow-card">
-          <div className="mb-5">
-            <p className="text-[10px] font-bold text-nquoc-muted uppercase tracking-widest mb-0.5">Integrity Matrix</p>
-            <h3 className="text-base font-bold text-nquoc-text font-header">Ma trận liêm chính Leader</h3>
-          </div>
-          <div className="h-[280px]">
-            <RadarChart
-              labels={['Phản hồi', 'WYFLS', 'Ngôn ngữ', 'Kịch bản', 'Thẳng thắn']}
-              data={[
-                leaderData.integrity.feedback_timeliness || 7,
-                leaderData.integrity.wyfl_compliance || 8,
-                leaderData.integrity.language_standard || 6,
-                leaderData.integrity.scenario_completion || 9,
-                leaderData.integrity.directness || 5,
-              ]}
-              max={10}
-              color="#8b5cf6"
-            />
-          </div>
-        </div>
-
-        {/* Suggestions */}
-        <div className="space-y-4">
-          <div className="bg-white rounded-[32px] border border-nquoc-border p-7 shadow-card">
-            <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-5 flex items-center gap-2">
-              <span>✨</span> Gợi ý từ AI
-            </p>
-            <div className="space-y-3">
-              {leaderData.improvement_suggestions.map((s, i) => (
-                <div key={i} className="flex gap-3 p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs text-nquoc-muted leading-relaxed
-                  group hover:border-indigo-200 hover:bg-indigo-50 transition-all cursor-default">
-                  <span className="text-indigo-500 font-bold text-lg leading-none group-hover:scale-125 transition-transform mt-0.5">→</span>
-                  <span>{s}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-[28px] p-6 text-white">
-            <p className="text-2xl mb-3">💡</p>
-            <p className="text-sm leading-relaxed opacity-90 italic">
-              "Leader là người đặt chuẩn ngôn ngữ cho cả team. Khi leader nói thẳng, cả tổ chức sẽ chuyển động nhanh hơn."
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+  if (!/\b\d{1,2}[:h]\d{0,2}|\b\d+\s*(giờ|phút|h|pm|am)\b/i.test(rewritten)) {
+    rewritten += ' Tôi sẽ phản hồi mốc tiếp theo lúc 16:00 hôm nay.'
+  }
+  if (!/tôi\s+sẽ|tôi\s+không\s+thể|tôi\s+cần/i.test(rewritten)) {
+    rewritten = `Tôi cần làm rõ như sau: ${rewritten}`
+  }
+  return rewritten
 }
 
-// ── Regex Engine (real-time) ──
+// ─── Legacy score engine (still used) ───────────────────────────
 const RT_PATTERNS = {
-  silence: /không sao|bình thường thôi|ok em|dạ được|chờ xem|thôi bỏ qua|để em xem|có lẽ|em sẽ cố|ngại|sợ offend/gi,
-  vague:   /sẽ cố gắng|sẽ làm|sẽ xem|hy vọng|mong là|có thể|thử xem|cố thôi/gi,
-  direct:  /tôi không đồng ý|cụ thể là|tôi cần|deadline là|vì lý do|giải pháp là|tôi sẽ gửi lúc|tôi không thể|tôi đề xuất/gi,
-  faceSave:/ngại quá|người ta nghĩ gì|thôi không sao|để sau tính|không muốn làm khó/gi,
-}
-
-const REWRITE_MAP: Record<string, string> = {
-  'không sao': 'tôi thấy có vấn đề ở điểm X',
-  'sẽ cố gắng': 'cam kết hoàn thành vào [giờ cụ thể]',
-  'hy vọng': 'xác nhận mốc [ngày]',
-  'để em xem': '[Tên] sẽ phản hồi vào lúc [giờ]',
-  'bình thường thôi': 'thực ra tôi thấy...',
-  'ok em': 'tôi cần thêm thông tin về X trước khi xác nhận',
+  silence: /không sao|bình thường|ok em|dạ được|chờ xem|thôi bỏ qua|để tính|có lẽ|sợ mất lòng/gi,
+  vague:   /cố gắng|sẽ làm|hy vọng|mong là|có thể|thử xem|cố thôi/gi,
+  direct:  /không đồng ý|cụ thể là|cần|thời hạn|vì lý do|giải pháp|chốt|đề xuất/gi,
 }
 
 function computeScore(text: string) {
@@ -322,477 +134,602 @@ function computeScore(text: string) {
   const sil = text.match(RT_PATTERNS.silence) || []
   const vag = text.match(RT_PATTERNS.vague) || []
   const dir = text.match(RT_PATTERNS.direct) || []
-  const face = text.match(RT_PATTERNS.faceSave) || []
   score -= sil.length * 15
   score -= vag.length * 10
-  score -= face.length * 12
   score += dir.length * 20
-  if (/\b\d{1,2}[:h]\d{0,2}\b/i.test(text)) score += 15
-  return { score: Math.max(0, Math.min(100, score)), sil, vag, dir, face }
+  if (/\d{1,2}[:h]\d{0,2}/i.test(text)) score += 15
+  return { score: Math.max(0, Math.min(100, score)), sil, vag, dir }
 }
 
-function buildRewriteSuggestion(text: string): string {
-  let out = text
-  for (const [pattern, replacement] of Object.entries(REWRITE_MAP)) {
-    out = out.replace(new RegExp(pattern, 'gi'), `【${replacement}】`)
-  }
-  if (!/\b\d{1,2}[:h]\d{0,2}\b/i.test(text)) {
-    out += ' (Cần bổ sung mốc thời gian cụ thể)'
-  }
-  return out
+// ─── Scenario groups ─────────────────────────────────────────────
+const SCENARIO_GROUPS = {
+  A: [
+    'Leader giao thêm task khi bạn đang quá tải. Bạn sẽ nói gì?',
+    'Bạn không đồng ý với quyết định của leader nhưng cuộc họp đang diễn ra. Bạn làm gì?',
+    'Leader giải thích quy trình mà bạn thấy có lỗ hổng. Bạn phản hồi thế nào?',
+  ],
+  B: [
+    'Đồng đội nộp bài thiếu thông tin lần thứ 3. Tin nhắn bạn gửi là gì?',
+    'Bạn thấy đồng nghiệp dùng từ mơ hồ trong nhóm chat. Bạn phản hồi công khai hay riêng tư?',
+    'Đồng đội hỏi câu mà bạn nghĩ họ nên tự tìm hiểu trước. Bạn trả lời thế nào?',
+  ],
+  C: [
+    'Bạn phát hiện mình sẽ trễ deadline 2 tiếng. Bạn nhắn gì và nhắn lúc nào?',
+    'Bạn không hiểu yêu cầu task nhưng đã hỏi 1 lần rồi. Bạn làm gì tiếp theo?',
+    'Bạn phát hiện lỗi do người khác gây ra nhưng team sẽ thấy là lỗi chung. Bạn xử lý thế nào?',
+  ],
 }
 
-// ── Rewrite Lab — Real-time Behavior Coaching ──
+// ─── Daily unlock prompts ─────────────────────────────────────────
+const UNLOCK_PROMPTS = [
+  'Có điều gì bạn biết nhưng chưa nói với team trong 3 ngày qua không? Hôm nay là ngày để nói.',
+  'Bạn có đang tránh né một cuộc trò chuyện khó nào không? Mô tả nó trong 1 câu.',
+  'Tin nhắn nào bạn đã gõ nhưng xóa đi vì ngại? Hãy gõ lại và gửi hôm nay.',
+]
+
+// ─── Mock mirror data ─────────────────────────────────────────────
+const MOCK_MIRROR = {
+  leaderDirectness: 61,
+  teamDirectness: 74,
+  leaderVaguePhrases: ['sẽ xem', 'để tính sau', 'ok thôi', 'có thể'],
+}
+
+// ─── Highlight color classes ──────────────────────────────────────
+const highlightClass: Record<PatternGroup, string> = {
+  silence: 'bg-red-100 text-red-800 border-b-2 border-red-500 rounded px-0.5',
+  vague:   'bg-amber-100 text-amber-800 border-b-2 border-amber-500 rounded px-0.5',
+  direct:  'bg-green-100 text-green-800 border-b-2 border-green-500 rounded px-0.5',
+  face:    'bg-purple-100 text-purple-800 border-b-2 border-purple-500 rounded px-0.5',
+}
+
+
+export function PassportPage({ user }: PassportPageProps) {
+  const [activeTab, setActiveTab] = useState<TabKey>('member')
+  const visibleTabs = tabs.filter((t) => !t.roles || t.roles.includes(user.role))
+
+  return (
+    <div className="p-4 md:p-6 lg:p-8 max-w-5xl mx-auto space-y-6 bg-[#f1f5f9]">
+      {/* Header */}
+      <div className="flex flex-col gap-2">
+        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+          Hộ Chiếu Giao Tiếp
+        </p>
+        <h1 className="text-2xl font-black text-slate-900 font-header tracking-tight">
+          Hộ Chiếu Giao Tiếp
+        </h1>
+        <p className="text-sm font-medium text-slate-500 max-w-lg mb-2">
+          Nơi bạn rèn luyện và đo lường độ phản xạ khi giải quyết vấn đề. Từ chối sự mập mờ, hướng tới thẳng thắn.
+        </p>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="flex gap-2 flex-wrap bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm w-max">
+        {visibleTabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${
+              activeTab === tab.key
+                ? 'bg-[#0f172a] text-white shadow-md'
+                : 'bg-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+            }`}
+          >
+            <span className="text-base">{tab.icon}</span>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab content */}
+      <div className="animate-fade-in mt-6" key={activeTab}>
+        {activeTab === 'member'       && <MemberDashboard user={user} />}
+        {activeTab === 'leader'       && <LeaderDashboard user={user} />}
+        {activeTab === 'mirror'       && <MirrorView />}
+        {activeTab === 'train'        && <RewriteLab />}
+        {activeTab === 'hr_dashboard' && <HRPassportDashboard />}
+      </div>
+    </div>
+  )
+}
+
+// ─── Member Dashboard ─────────────────────────────────────────────
+function MemberDashboard({ user: _user }: { user: AuthUser }) {
+  const [data, setData] = useState<{ profile: PassportProfile; heatmap: CommHeatmapEntry[]; scenarios_done: number } | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    passportService.getMe().then((d) => {
+      setData(d)
+      setLoading(false)
+    })
+  }, [])
+
+  const todayPrompt = UNLOCK_PROMPTS[new Date().getDay() % 3]
+  const xpDisplay = useCountUp(data?.profile.culture_xp ?? 0)
+
+  if (loading) return <LoadingSpinner />
+  if (!data) return null
+  const { profile } = data
+
+  return (
+    <div className="space-y-6">
+      {/* Câu hỏi khai phá hôm nay */}
+      <div className="bg-[#0f172a] rounded-2xl p-5 flex items-start gap-4">
+        <div className="text-2xl flex-shrink-0">💬</div>
+        <div className="flex-1">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.12em] mb-1">
+            CÂU HỎI KHAI PHÁ HÔM NAY
+          </p>
+          <p className="text-sm font-medium text-white leading-relaxed">{todayPrompt}</p>
+        </div>
+        <button className="flex-shrink-0 text-xs font-bold text-blue-400 hover:text-blue-300 whitespace-nowrap transition-colors">
+          Vào Phòng Tập →
+        </button>
+      </div>
+
+      {/* XP Hero */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 md:p-10 text-white shadow-blue-200 shadow-lg relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+          <span className="text-9xl font-bold">🎯</span>
+        </div>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <p className="text-blue-100 text-[11px] uppercase tracking-widest font-bold mb-2">Điểm Văn Hóa Tích Lũy</p>
+            <h2 className="text-6xl font-black font-header mb-4 animate-count-up">
+              {xpDisplay} <span className="text-xl text-blue-200 font-bold">XP</span>
+            </h2>
+            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
+              <span>🔥</span>
+              <span className="text-sm font-bold">Giữ nhịp: {profile.streak_days} ngày</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Stat grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-11 h-11 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl">🎯</div>
+            <div>
+              <h3 className="text-base font-bold text-slate-900 font-header">Chỉ số Thẳng Thắn</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.12em] mt-0.5">Điểm đánh giá cá nhân</p>
+            </div>
+          </div>
+          <div className="flex items-end gap-3 mb-3">
+            <span className="text-4xl font-black font-header text-blue-600">{profile.directness_score.toFixed(1)}</span>
+            <span className="text-slate-400 font-bold mb-1">/ 10</span>
+          </div>
+          <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden mb-2">
+            <div className="h-full rounded-full transition-all duration-1000 bg-blue-500" style={{ width: `${profile.directness_score * 10}%` }} />
+          </div>
+          <p className="text-xs font-medium text-slate-500">Tiếp tục rèn luyện trong Phòng Tập để tăng điểm.</p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-11 h-11 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-xl">🛡️</div>
+            <div>
+              <h3 className="text-base font-bold text-slate-900 font-header">Cảm giác An Toàn</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.12em] mt-0.5">Biểu đồ 7 ngày</p>
+            </div>
+          </div>
+          <div className="h-[120px] w-full">
+            <LineChart
+              labels={['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']}
+              datasets={[{ label: 'Chỉ số an toàn', data: [7.2, 7.5, 7.1, 7.8, 8.2, 8.0, 8.5], color: '#10b981', fill: true }]}
+              max={10}
+            />
+          </div>
+        </div>
+      </div>
+
+      <CultureHeatmap streakDays={profile.streak_days} />
+    </div>
+  )
+}
+
+// ─── Leader Dashboard ─────────────────────────────────────────────
+function LeaderDashboard({ user }: { user: AuthUser }) {
+  const [leaderData, setLeaderData] = useState<{ integrity: LeaderIntegrity; improvement_suggestions: string[] } | null>(null)
+
+  useEffect(() => {
+    passportService.getLeaderProfile(user.id).then(setLeaderData)
+  }, [user.id])
+
+  const scoreRaw = Math.round((leaderData?.integrity.integrity_score ?? 0) * 100)
+  const score = useCountUp(scoreRaw)
+  const isGood = scoreRaw >= 70
+
+  if (!leaderData) return <LoadingSpinner />
+
+  return (
+    <div className="space-y-6">
+      <div className={`rounded-2xl p-8 md:p-10 text-white shadow-lg relative overflow-hidden ${isGood ? 'bg-gradient-to-r from-emerald-500 to-teal-600' : 'bg-gradient-to-r from-blue-600 to-blue-700'}`}>
+        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none text-9xl">⚖️</div>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <p className="text-white/80 text-[11px] uppercase tracking-widest font-bold mb-2">Độ tin cậy của Quản lý</p>
+            <h2 className="text-6xl font-black font-header mb-1 animate-count-up">
+              {score} <span className="text-xl opacity-60">/ 100</span>
+            </h2>
+            <p className="text-sm font-medium mt-2">Dẫn dắt bằng sự Thẳng Thắn. Đội ngũ sẽ học theo bạn.</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="w-11 h-11 bg-blue-50 rounded-2xl flex items-center justify-center text-xl">📊</div>
+            <h3 className="text-base font-bold text-slate-900 font-header">Ma trận Chuyên Nghiệp</h3>
+          </div>
+          <div className="h-[280px]">
+            <RadarChart
+              labels={['Tốc độ Phản hồi', 'Minh bạch', 'Ngôn ngữ', 'Hoàn thành Hứa hẹn', 'Độ Thẳng Thắn']}
+              data={[
+                leaderData.integrity.feedback_timeliness || 7,
+                leaderData.integrity.wyfl_compliance || 8,
+                leaderData.integrity.language_standard || 6,
+                leaderData.integrity.scenario_completion || 9,
+                leaderData.integrity.directness || 5,
+              ]}
+              max={10}
+              color="#1d4ed8"
+            />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-center hover:shadow-md transition-all">
+          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.12em] mb-5 flex items-center gap-2">
+            <span className="text-blue-500">✨</span> Gợi ý thay đổi hành vi
+          </h3>
+          <div className="space-y-3">
+            {leaderData.improvement_suggestions.map((s, i) => (
+              <div key={i} className="flex gap-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                <span className="text-blue-500 font-bold text-lg mt-0.5 flex-shrink-0">→</span>
+                <span className="text-sm font-medium text-slate-700 leading-relaxed">{s}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Mirror View ──────────────────────────────────────────────────
+function MirrorView() {
+  const leaderScore = MOCK_MIRROR.leaderDirectness
+  const teamScore = MOCK_MIRROR.teamDirectness
+  const diff = leaderScore - teamScore
+
+  const leaderDisplay = useCountUp(leaderScore)
+  const teamDisplay   = useCountUp(teamScore)
+
+  const leaderColor = leaderScore >= 70 ? '#10b981' : leaderScore >= 50 ? '#f59e0b' : '#e11d48'
+  const teamColor   = teamScore >= 70 ? '#10b981' : teamScore >= 50 ? '#f59e0b' : '#e11d48'
+
+  let gapBadge = { color: 'bg-emerald-100 text-emerald-800 border border-emerald-300', text: 'Đang đồng thuận tốt' }
+  if (diff > 10) gapBadge = { color: 'bg-blue-100 text-blue-800 border border-blue-300', text: 'Leader đang dẫn đầu về thẳng thắn' }
+  if (diff < -10) gapBadge = { color: 'bg-red-100 text-red-800 border border-red-300', text: 'Cảnh báo: Đội ngũ đang thẳng thắn hơn leader. Hãy dẫn đầu bằng ví dụ.' }
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-[#0f172a] rounded-2xl p-6 text-white">
+        <p className="text-sm font-medium text-slate-300 leading-relaxed">
+          "Trước khi xem data của team – đây là data của bạn."
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Leader score */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center hover:shadow-md transition-all">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.12em] mb-4">Chỉ số của leader</p>
+          <div className="relative w-28 h-28 mx-auto mb-4">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="#f1f5f9" strokeWidth="10" />
+              <circle cx="50" cy="50" r="42" fill="none" stroke={leaderColor} strokeWidth="10"
+                strokeDasharray={`${leaderScore * 2.638} 263.8`} strokeLinecap="round" />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-3xl font-black text-slate-900 font-header">{leaderDisplay}</span>
+            </div>
+          </div>
+          <p className="text-sm font-medium text-slate-600">/ 100 điểm thẳng thắn</p>
+        </div>
+
+        {/* Team score */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center hover:shadow-md transition-all">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.12em] mb-4">Chỉ số trung bình đội nhóm</p>
+          <div className="relative w-28 h-28 mx-auto mb-4">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="#f1f5f9" strokeWidth="10" />
+              <circle cx="50" cy="50" r="42" fill="none" stroke={teamColor} strokeWidth="10"
+                strokeDasharray={`${teamScore * 2.638} 263.8`} strokeLinecap="round" />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-3xl font-black text-slate-900 font-header">{teamDisplay}</span>
+            </div>
+          </div>
+          <p className="text-sm font-medium text-slate-600">/ 100 điểm thẳng thắn</p>
+        </div>
+      </div>
+
+      {/* Gap analysis */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <div className="flex items-center gap-3 mb-5">
+          <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${gapBadge.color}`}>
+            {gapBadge.text}
+          </span>
+        </div>
+
+        <div>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.12em] mb-3">
+            Cụm từ mơ hồ leader dùng tuần này
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {MOCK_MIRROR.leaderVaguePhrases.map((phrase, i) => (
+              <span key={i} className="text-xs font-bold px-3 py-1.5 rounded-full bg-red-50 text-red-700 border border-red-200">
+                "{phrase}"
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Rewrite Lab ──────────────────────────────────────────────────
 function RewriteLab() {
   const [inputText, setInputText] = useState('')
   const [rtScore, setRtScore] = useState<ReturnType<typeof computeScore>>(null)
-  const [analyzing, setAnalyzing] = useState(false)
-  const [result, setResult] = useState<AnalyzeResult | null>(null)
-  const [rewrite, setRewrite] = useState<RewriteResult | null>(null)
-  const [showTraining, setShowTraining] = useState(false)
   const [showSilenceCalc, setShowSilenceCalc] = useState(false)
+  const [scenarioGroup, setScenarioGroup] = useState<'A' | 'B' | 'C'>('A')
+  const [scenarioIdx, setScenarioIdx] = useState(0)
+  const [scenarioResponse, setScenarioResponse] = useState('')
+  const [scenarioScore, setScenarioScore] = useState<ReturnType<typeof computeScore>>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Real-time compute — debounced 200ms
   const handleInput = useCallback((val: string) => {
     setInputText(val)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => setRtScore(computeScore(val)), 200)
   }, [])
 
-  const handleAnalyze = async () => {
-    if (!inputText.trim()) return
-    setAnalyzing(true)
-    try {
-      const [analysisResult, rewriteResult] = await Promise.all([
-        passportService.analyze(inputText),
-        passportService.rewrite(inputText),
-      ])
-      setResult(analysisResult)
-      setRewrite(rewriteResult)
-    } finally {
-      setAnalyzing(false)
-    }
+  const handleScenarioResponse = useCallback((val: string) => {
+    setScenarioResponse(val)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => setScenarioScore(computeScore(val)), 200)
+  }, [])
+
+  const pickNextScenario = () => {
+    const list = SCENARIO_GROUPS[scenarioGroup]
+    setScenarioIdx((scenarioIdx + 1) % list.length)
+    setScenarioResponse('')
+    setScenarioScore(null)
   }
 
   const scoreNum = rtScore?.score ?? null
-  const scoreColor = scoreNum === null ? '#94a3b8' : scoreNum >= 70 ? '#10b981' : scoreNum >= 50 ? '#f59e0b' : '#e11d48'
-  const scoreLabel = scoreNum === null ? '—' : scoreNum >= 70 ? 'Thẳng thắn ✅' : scoreNum >= 50 ? 'Mơ hồ ⚠️' : 'Im lặng 🔴'
+  const isDirect = scoreNum !== null && scoreNum >= 70
+  const isVague  = scoreNum !== null && scoreNum >= 50 && scoreNum < 70
+  const isSilent = scoreNum !== null && scoreNum < 50
 
-  // First match for hint
-  const firstHintKey = inputText ? Object.keys(REWRITE_MAP).find(k => inputText.toLowerCase().includes(k)) : null
+  const statusColor = isDirect ? 'text-emerald-600' : isVague ? 'text-amber-600' : isSilent ? 'text-rose-600' : 'text-slate-400'
+  const statusLabel = isDirect ? 'NÓI THẲNG' : isVague ? 'CÒN MƠ HỒ' : isSilent ? 'ĐANG NÉ TRÁNH' : 'CHƯA ĐÁNH GIÁ'
 
-  const ratingConfig: Record<string, { color: string; bg: string; icon: string; label: string }> = {
-    direct:         { color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200', icon: '🟢', label: 'Thẳng thắn' },
-    vague:          { color: 'text-amber-700',   bg: 'bg-amber-50 border-amber-200',   icon: '🟡', label: 'Mơ hồ' },
-    silent:         { color: 'text-rose-700',    bg: 'bg-rose-50 border-rose-200',     icon: '🔴', label: 'Im lặng' },
-    'face-saving':  { color: 'text-orange-700',  bg: 'bg-orange-50 border-orange-200', icon: '🟠', label: 'Mặt nạ' },
-  }
+  const highlights = inputText ? parseHighlights(inputText) : []
+  const rewritten  = inputText.trim() ? buildProfessionalRewrite(inputText) : ''
+
+  const currentScenarios = SCENARIO_GROUPS[scenarioGroup]
+  const currentScenario  = currentScenarios[scenarioIdx % currentScenarios.length]
+  const sScoreNum = scenarioScore?.score ?? null
+  const sColor = sScoreNum !== null
+    ? (sScoreNum >= 70 ? 'text-emerald-600' : sScoreNum >= 50 ? 'text-amber-600' : 'text-rose-600')
+    : 'text-slate-400'
+  const sLabel = sScoreNum !== null
+    ? (sScoreNum >= 70 ? 'NÓI THẲNG ✅' : sScoreNum >= 50 ? 'CÒN MƠ HỒ 🟡' : 'ĐANG NÉ TRÁNH 🔴')
+    : 'CHƯA ĐÁNH GIÁ'
 
   return (
-    <div className="space-y-5">
-      {/* Lab header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center text-sm">✍️</div>
-            <p className="text-[10px] font-bold text-nquoc-muted uppercase tracking-widest">Behavior Coaching Engine</p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center text-2xl">✍️</div>
+          <div>
+            <h2 className="text-base font-black text-slate-900 font-header tracking-tight">Phòng Tập Giao Tiếp</h2>
+            <p className="text-sm font-medium text-slate-500 mt-0.5">Viết thử vào ô bên dưới, hệ thống sẽ chỉ ra lỗi né tránh của bạn.</p>
           </div>
-          <h2 className="text-xl font-bold text-nquoc-text font-header">Rewrite Lab</h2>
-          <p className="text-sm text-nquoc-muted mt-1">Gõ tin nhắn — AI highlight <strong>ngay lập tức</strong> và gợi ý cách viết lại theo chuẩn "Nói thẳng"</p>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowSilenceCalc(true)}
-            className="text-xs font-bold text-rose-600 border border-rose-200 rounded-xl px-4 py-2 hover:bg-rose-50 transition-all whitespace-nowrap"
-          >
-            🔕 Chi phí im lặng
-          </button>
-          <button
-            onClick={() => setShowTraining(true)}
-            className="text-xs font-bold text-indigo-600 border border-indigo-200 rounded-xl px-4 py-2 hover:bg-indigo-50 transition-all whitespace-nowrap"
-          >
-            📖 Ôn lý thuyết
-          </button>
-        </div>
+        <button
+          onClick={() => setShowSilenceCalc(true)}
+          className="w-full md:w-auto px-5 py-2.5 border-2 border-rose-100 bg-rose-50 text-rose-600 font-bold text-sm rounded-xl hover:bg-rose-100 hover:border-rose-200 transition-all"
+        >
+          🔕 Xem Thiệt Hại Của Sự Im Lặng
+        </button>
       </div>
 
-      {/* Real-time score bar */}
+      {/* Score bar */}
       {scoreNum !== null && (
-        <div className="flex items-center gap-4 p-4 bg-white border border-nquoc-border rounded-[24px] shadow-card animate-fade-in">
-          <div className="flex items-center gap-3 flex-1">
-            <div className="text-sm font-bold" style={{ color: scoreColor }}>Directness Score</div>
-            <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{ width: `${scoreNum}%`, backgroundColor: scoreColor }}
-              />
-            </div>
-            <div className="text-xl font-extrabold font-header tabular-nums" style={{ color: scoreColor }}>
-              {scoreNum}
-            </div>
+        <div className="bg-white rounded-2xl border border-slate-200 p-3 shadow-sm flex items-center gap-4">
+          <div className={`px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wide bg-slate-50 ${statusColor}`}>{statusLabel}</div>
+          <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
+            <div className="h-full rounded-full transition-all duration-300" style={{ width: `${scoreNum}%`, backgroundColor: isDirect ? '#10b981' : isVague ? '#f59e0b' : '#e11d48' }} />
           </div>
-          <div className="text-xs font-bold px-3 py-1 rounded-full text-white" style={{ backgroundColor: scoreColor }}>
-            {scoreLabel}
-          </div>
+          <div className={`font-black font-header text-xl pr-4 ${statusColor}`}>{scoreNum}</div>
         </div>
       )}
 
-      {/* Pattern legend */}
-      <div className="flex gap-3 flex-wrap">
-        {[
-          { icon: '🔴', label: 'Im lặng', example: '"không sao ạ"', cls: 'bg-rose-50 border-rose-200 text-rose-700', count: rtScore?.sil.length ?? 0 },
-          { icon: '🟡', label: 'Mơ hồ', example: '"sẽ cố gắng"', cls: 'bg-amber-50 border-amber-200 text-amber-700', count: rtScore?.vag.length ?? 0 },
-          { icon: '🟢', label: 'Thẳng thắn', example: '"Tôi cần X lúc Y"', cls: 'bg-emerald-50 border-emerald-200 text-emerald-700', count: rtScore?.dir.length ?? 0 },
-        ].map((p) => (
-          <div key={p.label} className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-bold ${p.cls}`}>
-            <span>{p.icon}</span>
-            <span>{p.label}</span>
-            {p.count > 0 && <span className="font-extrabold">({p.count})</span>}
-            <span className="opacity-60 font-normal italic hidden lg:inline">— {p.example}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Before → After Shock — side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Left: Input with real-time highlights */}
-        <div className="bg-white rounded-[32px] border border-nquoc-border p-7 shadow-card space-y-4">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
-              <p className="text-[10px] font-bold text-nquoc-muted uppercase tracking-widest">Bản gốc của bạn</p>
-            </div>
-            {scoreNum !== null && scoreNum < 70 && (
-              <span className="text-[9px] font-bold text-rose-500 uppercase tracking-wider">Cách bạn đang nói</span>
-            )}
-          </div>
+      {/* Main input / output panels */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Input */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col gap-4 hover:shadow-md transition-all">
+          <h3 className="text-[10px] font-bold text-slate-700 uppercase tracking-[0.12em] flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Bản Nháp
+          </h3>
           <textarea
-            id="rewrite-input"
             value={inputText}
-            onChange={(e) => handleInput(e.target.value)}
-            placeholder="Ví dụ: Tôi sẽ cố hoàn thành sớm, hy vọng xong trước cuối tuần thôi ạ. Không sao nếu quá deadline..."
-            className="w-full h-36 border-2 border-nquoc-border rounded-2xl px-4 py-3.5 text-sm text-nquoc-text resize-none
-              focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all placeholder-slate-300"
+            onChange={e => handleInput(e.target.value)}
+            className="w-full h-48 bg-slate-50 border-2 border-transparent focus:border-blue-100 focus:bg-white rounded-2xl p-5 text-sm font-medium text-slate-800 resize-none outline-none transition-all placeholder-slate-400"
+            placeholder="VD: Tuần này chắc sẽ hơi trễ xíu, mong mọi người thông cảm bình thường thôi vì task nhiều quá..."
           />
+        </div>
 
-          {/* Real-time hint */}
-          {firstHintKey && REWRITE_MAP[firstHintKey] && (
-            <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-2xl animate-fade-in">
-              <span className="text-sm flex-shrink-0">💡</span>
-              <p className="text-xs text-amber-800 leading-relaxed">
-                Thay <strong>"{firstHintKey}"</strong> → <strong>"{REWRITE_MAP[firstHintKey]}"</strong>
-              </p>
+        {/* Output */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col gap-4 hover:shadow-md transition-all">
+          {!inputText.trim() ? (
+            <div className="flex-1 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-slate-400 p-6 text-center h-full min-h-[200px]">
+              <span className="text-4xl mb-4">🤖</span>
+              <p className="text-sm font-medium">Bắt đầu gõ để nhận ngay phân tích từ hệ thống</p>
             </div>
-          )}
+          ) : (
+            <div className="flex-1 space-y-4">
+              {/* Highlight panel */}
+              <div>
+                <h3 className="text-[10px] font-bold text-slate-700 uppercase tracking-[0.12em] flex items-center gap-2 mb-3">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-400"></span> Phát hiện rào cản
+                </h3>
+                <div className="bg-slate-50 rounded-2xl p-4 text-sm leading-loose border border-slate-200">
+                  {highlights.map((seg, i) =>
+                    seg.group
+                      ? <span key={i} className={highlightClass[seg.group]}>{seg.text}</span>
+                      : <span key={i}>{seg.text}</span>
+                  )}
+                </div>
+              </div>
 
-          {result && (
-            <div className="mt-2">
-              <p className="text-[10px] font-bold text-nquoc-muted uppercase tracking-wider mb-2">Highlight rào cản:</p>
-              <div className="text-sm leading-relaxed p-3 bg-nquoc-bg rounded-xl">
-                <PatternHighlight text={inputText} patterns={result.patterns_detected} />
+              {/* Rewrite panel */}
+              <div>
+                <h3 className="text-[10px] font-bold text-slate-700 uppercase tracking-[0.12em] flex items-center gap-2 mb-3">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Gợi ý viết lại
+                </h3>
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-sm font-medium text-emerald-900 leading-relaxed">
+                  {rewritten}
+                </div>
+              </div>
+
+              {/* Legend */}
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+                <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700 font-bold">● Im lặng</span>
+                <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700 font-bold">● Mơ hồ</span>
+                <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-bold">● Thẳng thắn</span>
+                <span className="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-700 font-bold">● Giữ thể diện</span>
               </div>
             </div>
           )}
+        </div>
+      </div>
 
+      {/* Scenario practice */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all">
+        <h3 className="text-base font-black text-slate-900 font-header tracking-tight mb-4">
+          Luyện Phản Xạ Tình Huống
+        </h3>
+
+        {/* Group tabs */}
+        <div className="flex gap-2 mb-5 bg-slate-50 p-1.5 rounded-xl w-max border border-slate-200">
+          {([['A', 'Leader & Bạn'], ['B', 'Đồng nghiệp'], ['C', 'Tự chịu trách nhiệm']] as const).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => { setScenarioGroup(key); setScenarioIdx(0); setScenarioResponse(''); setScenarioScore(null) }}
+              className={`text-xs font-bold px-3 py-2 rounded-lg transition-all ${
+                scenarioGroup === key ? 'bg-white text-slate-900 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              {key} – {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Scenario card */}
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 mb-4">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.12em] mb-2">Tình huống</p>
+          <p className="text-sm font-medium text-slate-800 leading-relaxed">{currentScenario}</p>
+        </div>
+
+        <textarea
+          value={scenarioResponse}
+          onChange={e => handleScenarioResponse(e.target.value)}
+          rows={3}
+          className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-100 focus:bg-white rounded-2xl p-4 text-sm font-medium text-slate-800 resize-none outline-none transition-all placeholder-slate-400 mb-3"
+          placeholder="Gõ phản hồi của bạn..."
+        />
+
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          {sScoreNum !== null && (
+            <span className={`text-xs font-bold px-3 py-1.5 rounded-full bg-slate-100 ${sColor}`}>{sLabel}</span>
+          )}
           <button
-            id="analyze-btn"
-            onClick={handleAnalyze}
-            disabled={!inputText.trim() || analyzing}
-            className="w-full py-3.5 bg-gradient-indigo text-white rounded-2xl text-sm font-bold
-              hover:opacity-90 disabled:opacity-40 transition-all active:scale-95 shadow-nquoc
-              flex items-center justify-center gap-2"
+            onClick={pickNextScenario}
+            className="ml-auto px-5 py-2.5 bg-[#0f172a] text-white font-bold text-sm rounded-xl hover:bg-slate-800 transition-all shadow-sm active:scale-[0.97]"
           >
-            {analyzing ? (
-              <>
-                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                Đang phân tích sâu...
-              </>
-            ) : (
-              '🔍 Phân tích chuyên sâu & Viết lại'
-            )}
+            Kịch bản tiếp theo →
           </button>
         </div>
-
-        {/* Right: Live suggestion OR API result */}
-        <div className="bg-white rounded-[32px] border border-nquoc-border p-7 shadow-card space-y-4">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-400" />
-              <p className="text-[10px] font-bold text-nquoc-muted uppercase tracking-widest">Phiên bản Lãnh đạo</p>
-            </div>
-            {scoreNum !== null && scoreNum < 70 && (
-              <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Cách bạn NÊN nói</span>
-            )}
-          </div>
-
-          {/* Before → After Shock */}
-          {inputText.length > 5 && !result && (
-            <div className="space-y-3 animate-fade-in">
-              {/* Mini live-rewrite */}
-              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
-                <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-2">Gợi ý nhanh (real-time):</p>
-                <p className="text-sm text-emerald-900 leading-relaxed font-medium">
-                  {buildRewriteSuggestion(inputText)}
-                </p>
-              </div>
-
-              {scoreNum !== null && scoreNum < 50 && (
-                <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4">
-                  <p className="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-1">🚨 Cảnh báo hành vi:</p>
-                  <p className="text-xs text-rose-800 leading-relaxed">
-                    Ngôn ngữ này có thể tạo ra sự mơ hồ và làm chậm quyết định của team.
-                    Nhấn "Phân tích chuyên sâu" để nhận hướng dẫn đầy đủ.
-                  </p>
-                </div>
-              )}
-
-              <p className="text-[11px] text-nquoc-muted italic text-center">
-                Nhấn "Phân tích chuyên sâu" để nhận đề xuất chi tiết từ AI
-              </p>
-            </div>
-          )}
-
-          {/* API Result */}
-          {result && rewrite && (
-            <div className="space-y-4 animate-slide-up">
-              <div className={`flex items-center gap-3 p-3.5 rounded-2xl border ${ratingConfig[result.rating]?.bg ?? 'bg-slate-50 border-slate-200'}`}>
-                <span className="text-xl">{ratingConfig[result.rating]?.icon ?? '⚪'}</span>
-                <div>
-                  <p className={`text-sm font-bold ${ratingConfig[result.rating]?.color ?? 'text-nquoc-text'}`}>
-                    {ratingConfig[result.rating]?.label}
-                  </p>
-                  <p className="text-xs text-nquoc-muted">{result.xp_delta >= 0 ? '+' : ''}{result.xp_delta} XP</p>
-                </div>
-              </div>
-
-              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
-                <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-2">Phiên bản Lãnh đạo:</p>
-                <p className="text-sm text-emerald-900 leading-relaxed font-medium">{rewrite.rewritten}</p>
-              </div>
-
-              {result.rewrite_suggestion && (
-                <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4">
-                  <p className="text-xs font-bold text-indigo-600 mb-1">💡 Tại sao cách nói này tốt hơn:</p>
-                  <p className="text-xs text-indigo-800 leading-relaxed">{result.rewrite_suggestion}</p>
-                </div>
-              )}
-
-              <button
-                onClick={() => navigator.clipboard.writeText(rewrite.rewritten)}
-                className="w-full py-2.5 border border-nquoc-border text-nquoc-muted rounded-2xl text-xs font-bold hover:bg-nquoc-hover transition-all"
-              >
-                📋 Copy bản viết lại
-              </button>
-            </div>
-          )}
-
-          {/* Empty state */}
-          {!inputText && !result && (
-            <div className="text-center py-10 text-nquoc-muted">
-              <p className="text-3xl mb-3">✍️</p>
-              <p className="text-sm font-medium">Bắt đầu gõ ở bên trái</p>
-              <p className="text-xs mt-1">AI sẽ phân tích real-time và gợi ý ngay</p>
-            </div>
-          )}
-        </div>
       </div>
 
-      {showTraining && <TrainingSlides onClose={() => setShowTraining(false)} />}
       {showSilenceCalc && <SilenceCostModal onClose={() => setShowSilenceCalc(false)} />}
     </div>
   )
 }
 
-// ── Silence Cost Calculator Modal ──
+// ─── Silence Cost Modal ───────────────────────────────────────────
 function SilenceCostModal({ onClose }: { onClose: () => void }) {
   const [days, setDays] = useState(3)
   const [people, setPeople] = useState(3)
-  const cost = Math.round(days * people * 2.8)
-  const resolved = Math.round(days * 0.5)
+  const costMoney = Math.round((days * people * 200000) / 1000) * 1000
+  const costHours = Math.round(days * people * 2)
+
+  const hoursDisplay  = useCountUp(costHours, 600)
+  const moneyDisplay  = useCountUp(costMoney, 600)
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-md bg-white rounded-[32px] shadow-2xl overflow-hidden">
-        <div className="bg-rose-50 border-b border-rose-100 p-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-rose-700 font-header">🔕 Chi phí của Im lặng</h3>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors text-lg">✕</button>
-          </div>
-          <p className="text-xs text-rose-500 mt-1">Tính toán tổn thất khi bạn không nói ra vấn đề</p>
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden p-6 border border-slate-200">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-base font-black text-slate-900 font-header">Tính Tổn Thất</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors text-sm font-bold">✕</button>
         </div>
-        <div className="p-6 space-y-5">
-          <div>
-            <label className="text-[10px] font-bold text-nquoc-muted uppercase tracking-widest block mb-2">
-              Bạn đã im lặng bao nhiêu ngày?
-            </label>
+
+        <div className="space-y-5">
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <label className="text-xs font-bold text-slate-600 block mb-3">Bạn đã trì hoãn nói chuyện bao nhiêu ngày?</label>
             <div className="flex items-center gap-4">
-              <input
-                type="range" min={1} max={14} value={days}
-                onChange={(e) => setDays(Number(e.target.value))}
-                className="flex-1 accent-rose-500"
-              />
-              <span className="text-sm font-bold text-rose-600 w-16 text-right">{days} ngày</span>
-            </div>
-          </div>
-          <div>
-            <label className="text-[10px] font-bold text-nquoc-muted uppercase tracking-widest block mb-2">
-              Bao nhiêu người bị ảnh hưởng?
-            </label>
-            <input
-              type="number" min={1} max={20} value={people}
-              onChange={(e) => setPeople(Math.max(1, Number(e.target.value)))}
-              className="w-full border-2 border-nquoc-border rounded-2xl px-4 py-3 text-sm font-bold
-                focus:outline-none focus:border-rose-400 transition-all"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-center">
-              <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest mb-1">Thiệt hại ước tính</p>
-              <p className="text-3xl font-extrabold text-rose-600 font-header">{cost}h</p>
-              <p className="text-[10px] text-rose-400">giờ công lãng phí</p>
-            </div>
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-center">
-              <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1">Nếu nói sớm</p>
-              <p className="text-3xl font-extrabold text-emerald-600 font-header">{resolved}h</p>
-              <p className="text-[10px] text-emerald-500">là đủ để giải quyết</p>
+              <input type="range" min={1} max={30} value={days} onChange={e => setDays(Number(e.target.value))} className="flex-1 accent-rose-500" />
+              <span className="w-16 text-right font-black text-rose-600 text-lg">{days} D</span>
             </div>
           </div>
 
-          <div className="bg-slate-800 rounded-2xl p-4 text-white">
-            <p className="text-xs leading-relaxed opacity-90 italic">
-              "Im lặng {days} ngày với {people} người = lãng phí <strong>{cost} giờ</strong>.
-              Chỉ cần nói thẳng <strong>ngay hôm nay</strong> = tiết kiệm {cost - resolved} giờ cho team."
-            </p>
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <label className="text-xs font-bold text-slate-600 block mb-3">Vấn đề này dính líu bao nhiêu người?</label>
+            <div className="flex items-center gap-4">
+              <input type="range" min={1} max={20} value={people} onChange={e => setPeople(Number(e.target.value))} className="flex-1 accent-blue-500" />
+              <span className="w-16 text-right font-black text-blue-600 text-lg">{people} P</span>
+            </div>
           </div>
 
-          <button
-            onClick={() => { onClose() }}
-            className="w-full py-3.5 bg-rose-500 text-white rounded-2xl text-sm font-bold hover:bg-rose-600 transition-all active:scale-95 shadow-lg shadow-rose-200"
-          >
-            Tôi cam kết nói thẳng hôm nay
+          <div className="border-t border-slate-100 pt-5">
+            <p className="text-center text-[10px] uppercase font-bold text-slate-400 mb-4 tracking-[0.12em]">Sự mập mờ đang gây thiệt hại</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center bg-rose-50 rounded-2xl p-4 text-rose-600 border border-rose-100">
+                <p className="text-xs font-bold mb-1 opacity-80">Lãng phí</p>
+                <p className="text-3xl font-black font-header">{hoursDisplay}h</p>
+                <p className="text-[10px] font-medium mt-1">xử lý hậu quả</p>
+              </div>
+              <div className="text-center bg-amber-50 rounded-2xl p-4 text-amber-600 border border-amber-100">
+                <p className="text-xs font-bold mb-1 opacity-80">Ước tính</p>
+                <p className="text-xl font-black font-header mt-1">{moneyDisplay.toLocaleString('vi-VN')}₫</p>
+                <p className="text-[10px] font-medium mt-1">mất trắng</p>
+              </div>
+            </div>
+          </div>
+
+          <button onClick={onClose} className="w-full py-4 bg-[#0f172a] text-white rounded-2xl font-bold shadow-lg hover:bg-slate-800 active:scale-[0.98] transition-all">
+            Tôi Sẽ Nói Thẳng Ngay Bây Giờ
           </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Pattern Highlighter ──
-function PatternHighlight({ text, patterns }: {
-  text: string
-  patterns: { type: string; snippet: string }[]
-}) {
-  if (patterns.length === 0) {
-    return <span className="hl-direct">{text}</span>
-  }
-
-  const parts: React.ReactNode[] = []
-  let remaining = text
-  let lastIndex = 0
-
-  for (const pattern of patterns) {
-    const idx = remaining.toLowerCase().indexOf(pattern.snippet.toLowerCase())
-    if (idx !== -1) {
-      const cls = pattern.type === 'silent' ? 'hl-silence' : pattern.type === 'vague' ? 'hl-vague' : 'hl-direct'
-      parts.push(text.slice(lastIndex, lastIndex + idx))
-      parts.push(<span key={idx} className={cls}>{text.slice(lastIndex + idx, lastIndex + idx + pattern.snippet.length)}</span>)
-      lastIndex += idx + pattern.snippet.length
-      remaining = remaining.slice(idx + pattern.snippet.length)
-    }
-  }
-  parts.push(remaining)
-  return <>{parts}</>
-}
-
-// ── Training Slides ──
-function TrainingSlides({ onClose }: { onClose: () => void }) {
-  const [slide, setSlide] = useState(0)
-  const [countdown, setCountdown] = useState(5)
-  const isLastSlide = slide === 2
-
-  useEffect(() => {
-    if (isLastSlide && countdown > 0) {
-      const t = setTimeout(() => setCountdown(c => c - 1), 1000)
-      return () => clearTimeout(t)
-    }
-  }, [isLastSlide, countdown])
-
-  const slides = [
-    {
-      title: '2000 năm lập trình hành vi',
-      content: 'Văn hóa Nho giáo dạy chúng ta giữ hòa khí, tránh đối đầu. Nhưng trong tổ chức hiện đại, im lặng không phải là tôn trọng — im lặng là rào cản phát triển.',
-      emoji: '🧠',
-      tag: 'Bối cảnh',
-    },
-    {
-      title: 'Khi bạn im lặng, bạn đang gánh hộ',
-      content: 'Mỗi ngày bạn không nói ra vấn đề, cả team phải gánh thêm chi phí ẩn: deadline trễ, rework, hiểu nhầm chồng chất. Im lặng không phải lịch sự — đó là chuyển rủi ro cho người khác.',
-      emoji: '⚖️',
-      tag: 'Chi phí',
-    },
-    {
-      title: 'Nói thẳng sớm = tử tế nhất',
-      content: 'Nói thẳng không phải vô lễ. Nói thẳng sớm = cho team cơ hội điều chỉnh sớm. Câu nói thẳng thắn nhất là câu nói ra sớm nhất, với thông tin rõ ràng và cụ thể nhất.',
-      emoji: '💚',
-      tag: 'Hành động',
-    },
-  ]
-
-  return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-fade-in"
-      style={{ backgroundColor: 'rgba(15, 23, 42, 0.96)' }}
-    >
-      <div className="w-full max-w-lg bg-slate-800 rounded-[32px] p-8 space-y-7 shadow-2xl border border-slate-700">
-        {/* Progress dots */}
-        <div className="flex justify-center gap-2">
-          {slides.map((_, i) => (
-            <div key={i} className={`transition-all duration-300 rounded-full ${
-              i === slide ? 'w-8 h-2 bg-emerald-400' : 'w-2 h-2 bg-slate-600'
-            }`} />
-          ))}
-        </div>
-
-        {/* Slide */}
-        <div className="text-center space-y-4" key={slide}>
-          <div className="w-20 h-20 rounded-[24px] bg-slate-700 flex items-center justify-center text-5xl mx-auto">
-            {slides[slide].emoji}
-          </div>
-          <div>
-            <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">{slides[slide].tag}</span>
-            <h2 className="text-xl font-bold text-white font-header mt-2">{slides[slide].title}</h2>
-          </div>
-          <p className="text-slate-300 text-sm leading-relaxed">{slides[slide].content}</p>
-        </div>
-
-        {/* Controls */}
-        <div className="flex gap-3">
-          {slide > 0 && (
-            <button
-              onClick={() => setSlide(s => s - 1)}
-              className="flex-1 py-3 border border-slate-600 text-slate-300 rounded-2xl text-sm font-medium hover:border-slate-400 transition-colors"
-            >
-              ← Quay lại
-            </button>
-          )}
-          {!isLastSlide ? (
-            <button
-              onClick={() => setSlide(s => s + 1)}
-              className="flex-1 py-3 bg-emerald-500 text-white rounded-2xl text-sm font-bold hover:bg-emerald-600 transition-all active:scale-95"
-            >
-              Tiếp theo →
-            </button>
-          ) : (
-            <button
-              onClick={onClose}
-              disabled={countdown > 0}
-              className="flex-1 py-3 bg-emerald-500 text-white rounded-2xl text-sm font-bold hover:bg-emerald-600 disabled:opacity-60 transition-all active:scale-95"
-            >
-              {countdown > 0 ? `Tôi hiểu — bắt đầu (${countdown}s)` : '✅ Bắt đầu luyện tập!'}
-            </button>
-          )}
         </div>
       </div>
     </div>

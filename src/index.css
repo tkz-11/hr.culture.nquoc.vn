@@ -13,8 +13,8 @@
 
   body {
     font-family: 'Manrope', sans-serif;
-    background-color: #f6f7fb;
-    color: #1e293b;
+    background-color: #f1f5f9;
+    color: #0f172a;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -127,6 +127,14 @@
     font-weight: 600;
   }
 
+  .hl-face {
+    background: #ede9fe;
+    border-bottom: 2px solid #7c3aed;
+    padding: 1px 3px;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+
   /* === ANIMATIONS === */
   @keyframes wave {
     0%   { transform: rotate(0deg); }
@@ -181,6 +189,17 @@
     to   { opacity: 1; transform: translateY(0) scale(1); }
   }
 
+  @keyframes urgentPulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+  }
+  @keyframes slideUpFast {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-urgent        { animation: urgentPulse 1.5s ease-in-out infinite; }
+  .animate-slide-up-fast { animation: slideUpFast 0.25s ease-out; }
   .animate-wave      { animation: wave 2.5s infinite; transform-origin: 70% 70%; display: inline-block; }
   .animate-float     { animation: float 3s ease-in-out infinite; }
   .animate-slide-up  { animation: slideUp 0.4s ease-out both; }

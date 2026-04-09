@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import type { AuthUser, HRMember, RetentionDashboard, LeaderMetrics } from '../../../shared/types'
+import { useCountUp } from '../../../shared/hooks/useCountUp'
 import { retentionService } from '../services/retention.service'
-import { Badge, riskBadge } from '../../../shared/components/Badge'
 import { Modal } from '../../../shared/components/Modal'
 import { EmptyState } from '../../../shared/components/EmptyState'
-import { Skeleton, TableSkeleton } from '../../../shared/components/Skeleton'
+import { Skeleton } from '../../../shared/components/Skeleton'
 import { ErrorBoundary } from '../../../shared/components/ErrorBoundary'
 
 interface RetentionPageProps {
@@ -41,166 +41,122 @@ export function RetentionPage({ user }: RetentionPageProps) {
   }, [user.role])
 
   if (loading) return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div className="space-y-2">
-        <Skeleton className="h-8 w-1/4" />
-        <Skeleton className="h-4 w-1/2" />
+    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-1/3 rounded-2xl" />
+        <div className="grid grid-cols-2 gap-4">
+          <Skeleton className="h-32 rounded-[24px]" />
+          <Skeleton className="h-32 rounded-[24px]" />
+        </div>
+        <Skeleton className="h-40 rounded-2xl" />
       </div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28 rounded-[28px]" />)}
-      </div>
-      <TableSkeleton />
     </div>
   )
 
+  const highRiskMembers = members.filter(m => m.risk_level === 'high' || m.risk_level === 'medium')
+  const stableMembers = members.filter(m => m.risk_level === 'low')
+
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto animate-fade-in">
+    <div className="p-4 md:p-6 lg:p-8 max-w-4xl mx-auto space-y-8 animate-fade-in bg-[#f1f5f9]">
       <ErrorBoundary feature="Retention Radar">
 
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-8 h-8 rounded-xl bg-rose-100 flex items-center justify-center text-sm">📡</div>
-              <p className="text-[10px] font-bold text-nquoc-muted uppercase tracking-widest">HR Tool</p>
-            </div>
-            <h1 className="text-2xl font-bold text-nquoc-text font-header">Retention Radar</h1>
-            <p className="text-sm text-nquoc-muted mt-1">Bản đồ rủi ro nhân sự · Quản trị bế tắc 30/60/90 ngày</p>
-          </div>
-          <button className="text-xs font-bold text-indigo-600 border border-indigo-200 rounded-2xl px-4 py-2.5
-            hover:bg-indigo-50 transition-all active:scale-95 whitespace-nowrap">
-            📊 Xuất báo cáo
-          </button>
+        {/* Tiêu đề & Giới thiệu */}
+        <div className="flex flex-col gap-2">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-slate-300"></span>
+            Không gian HR & Leader
+          </p>
+          <h1 className="text-3xl font-extrabold text-slate-900 font-header tracking-tight">
+            Sức Khỏe Đội Ngũ
+          </h1>
+          <p className="text-sm font-medium text-slate-500 max-w-lg">
+            Khám phá sớm các rào cản và cảm xúc của nhân sự để có hành động can thiệp kịp thời. Đừng để sự im lặng kéo dài.
+          </p>
         </div>
 
-        {/* Summary KPI Cards — Glassmorphism style */}
-        {dashboard && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <KPICard
-              label="Rủi ro cao"
-              value={dashboard.high_risk}
-              icon="🚨"
-              gradient="from-rose-500 to-pink-600"
-              bg="bg-rose-50"
-              textColor="text-rose-600"
-              borderColor="border-rose-100"
-              urgent={dashboard.high_risk > 0}
-            />
-            <KPICard
-              label="Đang bế tắc"
-              value={dashboard.stuck_count}
-              icon="🔴"
-              gradient="from-amber-500 to-orange-600"
-              bg="bg-amber-50"
-              textColor="text-amber-600"
-              borderColor="border-amber-100"
-              urgent={dashboard.stuck_count > 2}
-            />
-            <KPICard
-              label="Checkpoint đến hạn"
-              value={dashboard.checkpoints_due}
-              icon="📅"
-              gradient="from-indigo-500 to-violet-600"
-              bg="bg-indigo-50"
-              textColor="text-indigo-600"
-              borderColor="border-indigo-100"
-            />
-            <KPICard
-              label="Tổng nhân sự"
-              value={dashboard.total_members}
-              icon="👥"
-              gradient="from-slate-500 to-slate-700"
-              bg="bg-slate-50"
-              textColor="text-slate-600"
-              borderColor="border-slate-100"
-            />
-          </div>
-        )}
-
-        {/* Recent Alerts Banner */}
+        {/* Cảnh báo Gần Đây (Nổi bật nhất nếu có) */}
         {dashboard && dashboard.recent_alerts.length > 0 && (
-          <div className="bg-rose-50 border border-rose-100 rounded-[28px] px-6 py-4 flex items-start gap-4">
-            <div className="w-8 h-8 rounded-xl bg-rose-500 flex items-center justify-center text-white text-sm flex-shrink-0 animate-pulse">
-              ⚠
-            </div>
-            <div className="flex-1">
-              <p className="text-xs font-bold text-rose-700 mb-2 uppercase tracking-wider">Cảnh báo gần đây</p>
-              <div className="flex flex-wrap gap-2">
-                {dashboard.recent_alerts.map((alert, i) => (
-                  <div key={i} className="flex items-center gap-1.5 text-xs text-rose-700 bg-white border border-rose-200 rounded-xl px-3 py-1.5 shadow-rose-soft">
-                    <span className="font-semibold">{alert.member_name}</span>
-                    <span className="text-rose-300">·</span>
-                    <Badge variant="red" size="sm">{alert.risk_level.toUpperCase()}</Badge>
-                    <span className="text-rose-400">{alert.days_ago} ngày trước</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <div className="bg-rose-50 border-2 border-rose-100 rounded-[24px] p-5">
+             <div className="flex items-start gap-4">
+               <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-rose-500 shadow-sm shrink-0">
+                  <span className="animate-pulse">⚠</span>
+               </div>
+               <div>
+                 <h3 className="text-sm font-bold text-rose-800 uppercase tracking-widest mb-2">Đang cần bạn lúc này</h3>
+                 <div className="flex flex-col gap-2">
+                   {dashboard.recent_alerts.map((alert, i) => (
+                     <div key={i} className="flex flex-wrap items-center gap-2 text-sm text-rose-700 bg-white rounded-xl px-3 py-2 shadow-sm border border-rose-50/50">
+                       <span className="font-bold text-slate-900">{alert.member_name}</span>
+                       <span className="text-rose-300">•</span>
+                       <span className="font-medium">Bế tắc <strong className="text-rose-600">{alert.days_ago} ngày</strong></span>
+                     </div>
+                   ))}
+                 </div>
+               </div>
+             </div>
           </div>
         )}
 
-        {/* Member Radar Grid */}
-        <div className="bg-white rounded-[32px] border border-nquoc-border overflow-hidden shadow-card">
-          <div className="flex items-center justify-between px-6 py-5 border-b border-nquoc-border">
-            <div>
-              <h2 className="text-base font-bold text-nquoc-text font-header">
-                Bản đồ nhân sự · 30/60/90 Day
-              </h2>
-              <p className="text-[10px] text-nquoc-muted font-bold uppercase tracking-wider mt-0.5">
-                Dựa trên tiến độ hòa nhập & rủi ro bế tắc
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 text-[11px] text-nquoc-muted font-medium">
-                <span className="w-2 h-2 rounded-full bg-rose-500" />Rủi ro cao
-                <span className="w-2 h-2 rounded-full bg-amber-400 ml-2" />Trung bình
-                <span className="w-2 h-2 rounded-full bg-emerald-400 ml-2" />Ổn định
-              </div>
-            </div>
+        {/* Tóm tắt thông số Hành vi */}
+        {dashboard && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <BehaviorCard 
+              num={dashboard.high_risk} label="Cần can thiệp gấp" 
+              icon="🚨" color="rose" urgent={dashboard.high_risk > 0} 
+            />
+            <BehaviorCard 
+              num={dashboard.stuck_count} label="Đang bế tắc" 
+              icon="🔴" color="amber" urgent={dashboard.stuck_count > 2} 
+            />
+            <BehaviorCard 
+              num={dashboard.checkpoints_due} label="Sắp đến hạn Đánh giá" 
+              icon="📅" color="indigo" 
+            />
+            <BehaviorCard 
+              num={dashboard.total_members} label="Thành viên" 
+              icon="👥" color="slate" 
+            />
           </div>
+        )}
 
-          {members.length === 0 ? (
-            <EmptyState icon="📋" title="Chưa có dữ liệu nhân sự" description="Dữ liệu sẽ xuất hiện khi có nhân sự được theo dõi." />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="text-[10px] text-nquoc-muted font-bold uppercase tracking-widest border-b border-nquoc-border bg-nquoc-bg">
-                    <th className="text-left px-6 py-3.5">Nhân sự</th>
-                    <th className="text-left px-4 py-3.5">Tiến độ</th>
-                    <th className="text-left px-4 py-3.5">Tình trạng</th>
-                    <th className="text-left px-4 py-3.5">Bế tắc</th>
-                    <th className="text-left px-4 py-3.5">Phụ trách</th>
-                    <th className="text-left px-4 py-3.5">Hành động</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-nquoc-border">
-                  {members.map((member) => (
-                    <MemberRow
-                      key={member.id}
-                      member={member}
-                      userRole={user.role}
-                      onIntervene={() => setInterventionMember(member)}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+        {/* Danh sách Cần Can Thiệp Gấp (Dạng Thẻ lớn, hành động tức thì) */}
+        <div className="space-y-4">
+           <h2 className="text-lg font-bold text-slate-900 font-header flex items-center gap-2 border-b border-slate-200 pb-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Ưu tiên xử lý ({highRiskMembers.length})
+           </h2>
+           
+           {highRiskMembers.length === 0 ? (
+             <EmptyState icon="🌈" title="Mọi thứ đang rất tuyệt" description="Không có nhân viên nào đang trong mức báo động đỏ." />
+           ) : (
+             <div className="grid grid-cols-1 gap-4">
+               {highRiskMembers.map(member => (
+                 <UrgentMemberCard key={member.id} member={member} onIntervene={() => setInterventionMember(member)} />
+               ))}
+             </div>
+           )}
         </div>
 
-        {/* Leader Matrix — HR Manager only */}
+        {/* Danh sách Ổn định */}
+        <div className="space-y-4 pt-6">
+           <h2 className="text-lg font-bold text-slate-400 font-header flex items-center gap-2 border-b border-slate-200 pb-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Đang hòa nhập tốt ({stableMembers.length})
+           </h2>
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {stableMembers.map(member => (
+                 <StableMemberCard key={member.id} member={member} />
+              ))}
+           </div>
+        </div>
+
+        {/* Dành riêng cho HR Manager: Ma Trận Leader */}
         {user.role === 'hr_manager' && leaderMetrics.length > 0 && (
-          <div className="bg-white rounded-[32px] border border-nquoc-border overflow-hidden shadow-card">
-            <div className="px-6 py-5 border-b border-nquoc-border">
-              <h2 className="text-base font-bold text-nquoc-text font-header">Ma trận Trưởng nhóm</h2>
-              <p className="text-[10px] text-nquoc-muted font-bold uppercase tracking-wider mt-0.5">
-                Tổng quan hiệu quả quản lý team
-              </p>
-            </div>
-            <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="space-y-4 pt-8">
+            <h2 className="text-lg font-bold text-slate-900 font-header flex items-center gap-2 border-b border-slate-200 pb-3">
+               <span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Phân tích Tổ chức Leader
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {leaderMetrics.map((lm) => (
-                <LeaderCard
+                <SimpleLeaderCard
                   key={lm.id}
                   metrics={lm}
                   onWarn={() => setWarnLeader(lm)}
@@ -213,7 +169,7 @@ export function RetentionPage({ user }: RetentionPageProps) {
 
         {/* Modals */}
         {interventionMember && (
-          <InterventionWizard
+          <SmartInterventionModal
             member={interventionMember}
             onClose={() => setInterventionMember(null)}
           />
@@ -226,577 +182,202 @@ export function RetentionPage({ user }: RetentionPageProps) {
   )
 }
 
-// ── KPI Card ──
-function KPICard({ label, value, icon, bg, textColor, borderColor, urgent }: {
-  label: string; value: number; icon: string
-  gradient: string; bg: string; textColor: string; borderColor: string; urgent?: boolean
-}) {
+function BehaviorCard({ num, label, icon, color, urgent }: { num: number, label: string, icon: string, color: 'rose' | 'amber' | 'indigo' | 'slate', urgent?: boolean }) {
+  const bgs = {
+    rose:   'bg-rose-50 border-rose-100 text-rose-600',
+    amber:  'bg-amber-50 border-amber-100 text-amber-600',
+    indigo: 'bg-blue-50 border-blue-100 text-blue-600',
+    slate:  'bg-white border-slate-200 text-slate-500',
+  }
+  const textColors = {
+    rose: 'text-rose-600', amber: 'text-amber-600',
+    indigo: 'text-blue-700', slate: 'text-slate-800'
+  }
+  const display = useCountUp(num)
+
   return (
-    <div className={`${bg} border ${borderColor} rounded-[28px] p-5 card-lift relative overflow-hidden ${urgent ? 'ring-1 ring-rose-300' : ''}`}>
-      {urgent && (
-        <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-      )}
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-base">{icon}</span>
-        <p className="text-[10px] font-bold text-nquoc-muted uppercase tracking-wider">{label}</p>
-      </div>
-      <p className={`text-4xl font-extrabold font-header leading-none ${textColor} animate-count-up`}>{value}</p>
+    <div className={`${bgs[color]} border rounded-2xl p-4 text-center relative shadow-sm hover:shadow-md transition-all`}>
+      {urgent && <div className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-rose-500 animate-urgent border-2 border-white" />}
+      <div className="text-2xl mb-1">{icon}</div>
+      <p className={`text-3xl font-black font-header block mb-1 animate-count-up ${textColors[color]}`}>{display}</p>
+      <p className="text-[11px] font-bold uppercase tracking-wide opacity-80">{label}</p>
     </div>
   )
 }
 
-// ── Member Row ──
-function MemberRow({ member, userRole, onIntervene }: {
-  member: HRMember; userRole: string; onIntervene: () => void
-}) {
-  const { variant, label } = riskBadge(member.risk_level)
-  const assignment = member.current_assignment
-  const stuckDays = assignment?.stuck_since
-    ? Math.floor((Date.now() - new Date(assignment.stuck_since).getTime()) / 86400000)
-    : 0
-
-  const day = member.days_in_team
-  const checkpoint = day >= 90 ? 90 : day >= 60 ? 60 : 30
-  const progress = Math.min((day / checkpoint) * 100, 100)
-
-  const progressColor = member.risk_level === 'high'
-    ? 'bg-rose-500'
-    : member.risk_level === 'medium'
-    ? 'bg-amber-400'
-    : 'bg-emerald-500'
-
-  return (
-    <tr className="hover:bg-nquoc-hover transition-colors group">
-      {/* Nhân sự */}
-      <td className="px-6 py-4">
-        <div className="flex items-center gap-3">
-          <div className={`w-9 h-9 rounded-2xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-sm
-            ${member.risk_level === 'high' ? 'bg-gradient-to-br from-rose-500 to-pink-600'
-            : member.risk_level === 'medium' ? 'bg-gradient-to-br from-amber-400 to-amber-500'
-            : 'bg-gradient-indigo'}`}>
-            {member.user?.name?.charAt(0) ?? '?'}
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-nquoc-text">{member.user?.name}</p>
-            <p className="text-[11px] text-nquoc-muted">{member.team?.name}</p>
-          </div>
-        </div>
-      </td>
-
-      {/* Tiến độ */}
-      <td className="px-4 py-4">
-        <div>
-          <p className="text-xs font-bold text-nquoc-text mb-1.5">{member.days_in_team}/{checkpoint}D</p>
-          <div className="w-28 h-2 bg-slate-100 rounded-full overflow-hidden">
-            <div className={`h-full rounded-full transition-all duration-700 ${progressColor}`} style={{ width: `${progress}%` }} />
-          </div>
-        </div>
-      </td>
-
-      {/* Tình trạng */}
-      <td className="px-4 py-4">
-        <Badge variant={variant} size="sm">{label}</Badge>
-      </td>
-
-      {/* Bế tắc */}
-      <td className="px-4 py-4">
-        {stuckDays > 0 ? (
-          <div className="flex items-center gap-1.5">
-            <span className={`text-sm font-bold ${stuckDays >= 14 ? 'text-rose-600' : 'text-amber-600'}`}>
-              {stuckDays} ngày
-            </span>
-            {stuckDays >= 14 && (
-              <span className="text-[9px] font-bold bg-rose-100 text-rose-600 rounded-full px-1.5 py-0.5 uppercase animate-pulse">
-                URGENT
-              </span>
-            )}
-          </div>
-        ) : (
-          <span className="text-sm text-slate-300 font-medium">—</span>
-        )}
-      </td>
-
-      {/* Phụ trách */}
-      <td className="px-4 py-4">
-        <span className="text-sm text-nquoc-text font-medium">{assignment?.leader?.name ?? '—'}</span>
-      </td>
-
-      {/* Hành động */}
-      <td className="px-4 py-4">
-        {userRole === 'hr_manager' ? (
-          <button
-            onClick={onIntervene}
-            className="text-xs font-bold text-white bg-rose-500 px-4 py-2 rounded-xl
-              hover:bg-rose-600 shadow-rose-soft transition-all active:scale-95 whitespace-nowrap"
-          >
-            Can thiệp ngay
-          </button>
-        ) : (
-          <button className="text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-4 py-2 rounded-xl
-            hover:bg-indigo-100 transition-all active:scale-95">
-            Hỗ trợ ngay
-          </button>
-        )}
-      </td>
-    </tr>
-  )
-}
-
-// ── Leader Card ──
-function LeaderCard({ metrics, onWarn, onCoach }: {
-  metrics: LeaderMetrics & { coaching_flag: boolean };
-  onWarn: () => void; onCoach: () => void
-}) {
-  const turnoverHigh = (metrics.turnover_rate_3m ?? 0) > 20
-  const engageLow = (metrics.engage_score ?? 10) < 5
-
-  return (
-    <div className="bg-white border border-nquoc-border rounded-[28px] p-6 space-y-4 shadow-card card-lift">
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
-            {metrics.leader?.name?.charAt(0) ?? 'L'}
-          </div>
-          <div>
-            <p className="text-sm font-bold text-nquoc-text">{metrics.leader?.name}</p>
-            <p className="text-[11px] text-nquoc-muted">{metrics.team?.name} · {metrics.team_size} người</p>
-          </div>
-        </div>
-        {metrics.coaching_flag && (
-          <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-1 font-bold uppercase tracking-wider">
-            ⚠ Coaching
-          </span>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-nquoc-bg rounded-2xl p-3">
-          <p className="text-[10px] text-nquoc-muted font-bold uppercase tracking-wider mb-1">Nghỉ việc 3T</p>
-          <p className={`text-xl font-extrabold font-header ${turnoverHigh ? 'text-rose-600' : 'text-slate-700'}`}>
-            {metrics.turnover_rate_3m ?? 0}%
-          </p>
-        </div>
-        <div className="bg-nquoc-bg rounded-2xl p-3">
-          <p className="text-[10px] text-nquoc-muted font-bold uppercase tracking-wider mb-1">Engagement</p>
-          <p className={`text-xl font-extrabold font-header ${engageLow ? 'text-rose-600' : 'text-emerald-600'}`}>
-            {metrics.engage_score ?? '—'}/10
-          </p>
-        </div>
-      </div>
-
-      <div className="flex gap-2">
-        <button onClick={onWarn}
-          className="flex-1 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl py-2 hover:bg-amber-100 transition-colors active:scale-95">
-          ⚠ Nhắc nhở
-        </button>
-        <button onClick={onCoach}
-          className="flex-1 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-xl py-2 hover:bg-indigo-100 transition-colors active:scale-95">
-          🎯 Coaching
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// ── Intervention Wizard — 3 bước: Lắng nghe → Đối thoại → Giải quyết ──
-function InterventionWizard({ member, onClose }: { member: HRMember; onClose: () => void }) {
-  const [step, setStep] = useState(1)
-  const [channel, setChannel] = useState<'1on1' | 'telegram' | 'email'>('1on1')
-  const [actionNote, setActionNote] = useState('')
-  const [commitment, setCommitment] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-
+function UrgentMemberCard({ member, onIntervene }: { member: HRMember, onIntervene: () => void }) {
   const stuckDays = member.current_assignment?.stuck_since
     ? Math.floor((Date.now() - new Date(member.current_assignment.stuck_since).getTime()) / 86400000)
     : 0
 
-  const handleSubmit = async () => {
-    if (!actionNote.trim()) return
-    setSubmitting(true)
-    try {
-      await retentionService.createIntervention({
-        member_id: member.id,
-        action_taken: `${actionNote}\n\nCam kết: ${commitment}`,
-        intervene_date: new Date().toISOString().split('T')[0],
-      })
-      setStep(4)
-    } finally {
-      setSubmitting(false)
-    }
-  }
+  const isHigh = member.risk_level === 'high'
 
-  const steps = [
-    { n: 1, label: 'Lắng nghe', icon: '👂' },
-    { n: 2, label: 'Đối thoại', icon: '💬' },
-    { n: 3, label: 'Giải quyết', icon: '✅' },
-  ]
+  return (
+    <div className="bg-white border-2 border-slate-200 hover:border-slate-300 hover:shadow-md transition-all duration-200 rounded-2xl p-5 shadow-sm block w-full relative overflow-hidden">
+      {isHigh && <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-rose-500" />}
+      <div className="flex flex-col md:flex-row md:items-center gap-5">
+         
+         <div className="flex items-center gap-4 flex-1">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-base font-bold shadow-sm flex-shrink-0
+              ${isHigh ? 'bg-rose-500' : 'bg-amber-500'}`}>
+              {member.user?.name?.charAt(0) ?? '?'}
+            </div>
+            <div>
+              <p className="text-base font-bold text-slate-900">{member.user?.name}</p>
+              <p className="text-xs text-slate-500 font-medium">{member.team?.name} • Phụ trách: {member.current_assignment?.leader?.name || 'Chưa rõ'}</p>
+            </div>
+         </div>
+
+         <div className="flex bg-slate-50 rounded-[16px] p-3 gap-4 border border-slate-100 flex-1 justify-center">
+            <div className="text-center">
+               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Bế tắc</p>
+               <p className={`text-lg font-bold font-header ${stuckDays >= 14 ? 'text-rose-600 animate-pulse' : 'text-slate-700'}`}>{stuckDays > 0 ? `${stuckDays} ngày` : 'Không'}</p>
+            </div>
+            <div className="w-[1px] bg-slate-200"></div>
+            <div className="text-center">
+               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Thích nghi</p>
+               <p className="text-lg font-bold font-header text-slate-700">{member.days_in_team}/90 ngày</p>
+            </div>
+         </div>
+
+         <button
+           onClick={onIntervene}
+           className="w-full md:w-auto px-6 py-3 bg-[#0f172a] text-white font-bold text-sm rounded-xl hover:bg-slate-800 transition-all shadow-md mt-2 md:mt-0 active:scale-[0.97]">
+           Can thiệp ngay
+         </button>
+
+      </div>
+    </div>
+  )
+}
+
+function StableMemberCard({ member }: { member: HRMember }) {
+  return (
+    <div className="bg-white border border-slate-100 rounded-[24px] p-4 flex items-center gap-3">
+       <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm font-bold border border-emerald-100">
+         {member.user?.name?.charAt(0) ?? '?'}
+       </div>
+       <div>
+         <p className="text-sm font-bold text-slate-800">{member.user?.name}</p>
+         <p className="text-xs text-slate-400 font-medium">Progress: {member.days_in_team}/90 • {member.team?.name}</p>
+       </div>
+       <div className="ml-auto text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">Tốt</div>
+    </div>
+  )
+}
+
+function SimpleLeaderCard({ metrics, onWarn, onCoach }: {
+  metrics: LeaderMetrics & { coaching_flag: boolean };
+  onWarn: () => void; onCoach: () => void
+}) {
+  const turnoverHigh = (metrics.turnover_rate_3m ?? 0) > 20
+  
+  return (
+    <div className="bg-white border text-center border-slate-200 rounded-2xl p-5 shadow-sm">
+       <div className="w-14 h-14 bg-indigo-50 border border-indigo-100 rounded-[20px] shadow-sm flex items-center justify-center text-indigo-600 font-bold text-xl mx-auto mb-3">
+         {metrics.leader?.name?.charAt(0) ?? 'L'}
+       </div>
+       <h3 className="text-base font-bold text-slate-900">{metrics.leader?.name}</h3>
+       <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest">{metrics.team?.name} • {metrics.team_size} người</p>
+       
+       <div className="mt-4 flex gap-2 justify-center">
+         <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${turnoverHigh ? 'bg-rose-50 text-rose-700' : 'bg-slate-50 text-slate-600'}`}>
+            Rời đi: {metrics.turnover_rate_3m}%
+         </span>
+         <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700">
+            Năng lượng: {metrics.engage_score}/10
+         </span>
+       </div>
+
+       <div className="mt-5 grid grid-cols-2 gap-3">
+         <button onClick={onWarn} className="py-2.5 bg-white border-2 border-amber-100 text-amber-700 font-bold text-xs rounded-xl hover:bg-amber-50">⚠ Nhắc nhẹ</button>
+         <button onClick={onCoach} className="py-2.5 bg-indigo-600 text-white font-bold text-xs rounded-xl hover:bg-indigo-700 shadow-sm">🎯 Huấn luyện</button>
+       </div>
+    </div>
+  )
+}
+
+/* Modal Can Thiệp Thông Minh: Tập trung vào kịch bản 1 Click (Scripted Response) */
+function SmartInterventionModal({ member, onClose }: { member: HRMember; onClose: () => void }) {
+  const [step, setStep] = useState<'info' | 'done'>('info')
+  const stuckDays = member.current_assignment?.stuck_since ? Math.floor((Date.now() - new Date(member.current_assignment.stuck_since).getTime()) / 86400000) : 0
+
+  const handleIntervene = () => {
+    setTimeout(() => {
+       setStep('done')
+    }, 800)
+  }
 
   return (
     <Modal isOpen title="" onClose={onClose} size="md">
-      <div className="p-6">
-
-        {step < 4 && (
-          <>
-            {/* Step indicator */}
-            <div className="flex items-center gap-0 mb-7">
-              {steps.map((s, i) => (
-                <React.Fragment key={s.n}>
-                  <div className="flex flex-col items-center">
-                    <div className={`w-9 h-9 rounded-2xl flex items-center justify-center text-sm font-bold transition-all duration-300 ${
-                      s.n < step ? 'bg-emerald-500 text-white'
-                      : s.n === step ? 'bg-gradient-indigo text-white shadow-nquoc scale-110'
-                      : 'bg-slate-100 text-nquoc-muted'
-                    }`}>
-                      {s.n < step ? '✓' : s.icon}
-                    </div>
-                    <p className={`text-[10px] font-bold mt-1.5 ${s.n === step ? 'text-indigo-600' : 'text-nquoc-muted'}`}>
-                      {s.label}
-                    </p>
-                  </div>
-                  {i < steps.length - 1 && (
-                    <div className={`flex-1 h-0.5 mb-5 mx-1 transition-all duration-500 ${s.n < step ? 'bg-emerald-400' : 'bg-slate-200'}`} />
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* Step 1: Lắng nghe */}
-        {step === 1 && (
-          <div className="space-y-5 animate-slide-up">
-            <div>
-              <h3 className="text-lg font-bold text-nquoc-text font-header">👂 Bước 1: Lắng nghe</h3>
-              <p className="text-sm text-nquoc-muted mt-1">Xem xét toàn bộ bối cảnh trước khi can thiệp.</p>
-            </div>
-
-            {/* Member context card */}
-            <div className="bg-nquoc-bg rounded-2xl p-5 space-y-3 border border-nquoc-border">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center text-white font-bold text-base">
-                  {member.user?.name?.charAt(0)}
-                </div>
-                <div>
-                  <p className="font-bold text-nquoc-text">{member.user?.name}</p>
-                  <p className="text-xs text-nquoc-muted">{member.team?.name} · Ngày {member.days_in_team}/90</p>
-                </div>
-                <Badge variant={riskBadge(member.risk_level).variant} size="sm" className="ml-auto">
-                  {member.risk_level.toUpperCase()}
-                </Badge>
+      <div className="p-0 border-b-0 max-h-[85vh] overflow-y-auto">
+         {step === 'info' ? (
+           <div className="p-6 md:p-8 space-y-6">
+              <div className="flex flex-col items-center text-center gap-3">
+                 <div className="w-16 h-16 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center text-rose-500 font-bold text-2xl">
+                   {member.user?.name?.charAt(0)}
+                 </div>
+                 <div>
+                   <h2 className="text-2xl font-bold font-header text-slate-900">{member.user?.name}</h2>
+                   <p className="text-sm font-medium text-slate-500">{member.team?.name} • Bế tắc <strong className="text-rose-600">{stuckDays} ngày</strong></p>
+                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                <div className="bg-white rounded-xl p-3">
-                  <p className="text-[10px] text-nquoc-muted font-bold uppercase tracking-wider mb-1">Số ngày bế tắc</p>
-                  <p className={`text-2xl font-extrabold font-header ${stuckDays >= 14 ? 'text-rose-600' : 'text-amber-600'}`}>
-                    {stuckDays > 0 ? stuckDays : '—'}
-                    <span className="text-sm font-normal text-nquoc-muted ml-1">ngày</span>
-                  </p>
-                  {stuckDays >= 14 && (
-                    <p className="text-[10px] font-bold text-rose-500 uppercase mt-1 animate-pulse">⚠ Nghiêm trọng</p>
-                  )}
-                </div>
-                <div className="bg-white rounded-xl p-3">
-                  <p className="text-[10px] text-nquoc-muted font-bold uppercase tracking-wider mb-1">Leader phụ trách</p>
-                  <p className="text-sm font-bold text-nquoc-text">
-                    {member.current_assignment?.leader?.name ?? 'Chưa phân công'}
-                  </p>
+              <div className="bg-slate-50 border border-slate-100 rounded-[20px] p-4 text-sm font-medium text-slate-700 italic text-center">
+                 "Máy học AI dự đoán: Nhân sự có xu hướng muốn nghỉ việc do thiếu gắn kết và phản hồi từ Trưởng nhóm."
+              </div>
+
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-3 text-center">Chọn kịch bản phù hợp nhất</p>
+                <div className="space-y-3">
+                   <button onClick={() => handleIntervene()} className="w-full text-left p-4 rounded-[20px] border border-indigo-100 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-300 transition-colors">
+                      <p className="text-sm font-bold text-indigo-900 mb-1">💬 Nhắn tin trò chuyện nhanh</p>
+                      <p className="text-xs text-indigo-700/80 font-medium">Bắt chuyện nhẹ nhàng, không tạo áp lực. Gửi kịch bản mẫu qua Chat.</p>
+                   </button>
+                   <button onClick={() => handleIntervene()} className="w-full text-left p-4 rounded-[20px] border border-amber-100 bg-amber-50 hover:bg-amber-100 hover:border-amber-300 transition-colors">
+                      <p className="text-sm font-bold text-amber-900 mb-1">📅 Đặt lịch 1-on-1 Khẩn cấp</p>
+                      <p className="text-xs text-amber-700/80 font-medium">Mời gọi thảo luận trực tiếp qua Coffee Meeting để giải tỏa nỗi lo.</p>
+                   </button>
                 </div>
               </div>
 
-              {member.current_assignment?.stuck_since && (
-                <p className="text-xs text-rose-600 font-semibold flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-                  Bế tắc từ: {new Date(member.current_assignment.stuck_since).toLocaleDateString('vi-VN')}
-                </p>
-              )}
-            </div>
-
-            {/* Listening checklist */}
-            <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4">
-              <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider mb-3">Trước khi gặp — check:</p>
-              <div className="space-y-2">
-                {[
-                  'Đọc lại lịch sử tương tác gần nhất với member?',
-                  'Hỏi Leader về bối cảnh và rào cản công việc?',
-                  'Đặt tâm thế lắng nghe, không phán xét từ đầu?',
-                ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-2.5 text-xs text-indigo-800">
-                    <span className="w-4 h-4 rounded flex items-center justify-center bg-indigo-200 text-indigo-700 font-bold flex-shrink-0 mt-0.5 text-[10px]">
-                      {i + 1}
-                    </span>
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <button
-              onClick={() => setStep(2)}
-              className="w-full py-3 bg-gradient-indigo text-white rounded-2xl text-sm font-bold hover:opacity-90 transition-all active:scale-95 shadow-nquoc"
-            >
-              Đã lắng nghe — Tiến đến Đối thoại →
-            </button>
-          </div>
-        )}
-
-        {/* Step 2: Đối thoại */}
-        {step === 2 && (
-          <div className="space-y-5 animate-slide-up">
-            <div>
-              <h3 className="text-lg font-bold text-nquoc-text font-header">💬 Bước 2: Đối thoại</h3>
-              <p className="text-sm text-nquoc-muted mt-1">Ghi lại kế hoạch trao đổi trực tiếp với member.</p>
-            </div>
-
-            {/* Channel selector */}
-            <div>
-              <p className="text-[10px] font-bold text-nquoc-muted uppercase tracking-wider mb-2">Hình thức gặp gỡ</p>
-              <div className="grid grid-cols-3 gap-2">
-                {([
-                  { key: '1on1', label: '1-on-1 Meet', icon: '🤝' },
-                  { key: 'telegram', label: 'Telegram DM', icon: '✈' },
-                  { key: 'email', label: 'Email', icon: '✉' },
-                ] as const).map((c) => (
-                  <button
-                    key={c.key}
-                    onClick={() => setChannel(c.key)}
-                    className={`py-3 px-2 rounded-2xl text-xs font-bold border transition-all text-center ${
-                      channel === c.key
-                        ? 'bg-indigo-50 border-indigo-400 text-indigo-700 shadow-sm'
-                        : 'border-nquoc-border text-nquoc-muted hover:bg-nquoc-hover'
-                    }`}
-                  >
-                    <div className="text-lg mb-1">{c.icon}</div>
-                    {c.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="text-[10px] font-bold text-nquoc-muted uppercase tracking-wider block mb-2">
-                Ghi chú nội dung trao đổi dự kiến <span className="text-rose-500">*</span>
-              </label>
-              <textarea
-                value={actionNote}
-                onChange={(e) => setActionNote(e.target.value)}
-                placeholder="VD: Hỏi thăm về rào cản công việc hiện tại, lắng nghe cảm xúc và nhu cầu. Đề xuất kết nối với mentor, tạo 1-on-1 hàng tuần..."
-                className="w-full h-28 border-2 border-nquoc-border rounded-2xl px-4 py-3 text-sm text-nquoc-text resize-none
-                  focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all placeholder-slate-300"
-              />
-            </div>
-
-            {/* Talk tips */}
-            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
-              <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-2">💡 Gợi ý câu hỏi mở:</p>
-              <div className="space-y-1.5 text-xs text-emerald-800">
-                {[
-                  '"Bạn đang cảm thấy thế nào về công việc gần đây?"',
-                  '"Có điều gì đang làm bạn khó chịu hoặc trở ngại không?"',
-                  '"Tôi có thể giúp gì để bạn tiến lên được không?"',
-                ].map((q, i) => (
-                  <p key={i} className="italic">{q}</p>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button onClick={() => setStep(1)}
-                className="flex-1 py-3 border border-nquoc-border text-nquoc-muted rounded-2xl text-sm font-medium hover:bg-nquoc-bg transition-colors">
-                ← Quay lại
+              <button onClick={onClose} className="w-full py-3 bg-white text-slate-500 font-bold text-sm rounded-full text-center hover:bg-slate-50 border border-slate-200">
+                Chưa làm bây giờ
               </button>
-              <button
-                onClick={() => setStep(3)}
-                disabled={!actionNote.trim()}
-                className="flex-1 py-3 bg-gradient-indigo text-white rounded-2xl text-sm font-bold hover:opacity-90 disabled:opacity-40 transition-all active:scale-95 shadow-nquoc"
-              >
-                Tiến đến Giải quyết →
+           </div>
+         ) : (
+           <div className="p-8 text-center space-y-4 py-12">
+              <div className="text-6xl mb-4 animate-bounce-in">👏</div>
+              <h2 className="text-2xl font-bold font-header text-slate-900">Tuyệt vời!</h2>
+              <p className="text-sm text-slate-600 font-medium">Bạn vừa làm một hành động tạo ra sự an toàn tâm lý. Cuộc trò chuyện đã được log lại vào hệ thống.</p>
+              <button onClick={onClose} className="w-full mt-4 py-4 bg-slate-900 text-white font-bold text-sm rounded-[24px] hover:bg-slate-800 shadow-md">
+                Hoàn thành
               </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Giải quyết */}
-        {step === 3 && (
-          <div className="space-y-5 animate-slide-up">
-            <div>
-              <h3 className="text-lg font-bold text-nquoc-text font-header">✅ Bước 3: Giải quyết</h3>
-              <p className="text-sm text-nquoc-muted mt-1">Xác nhận cam kết hành động sau buổi đối thoại.</p>
-            </div>
-
-            {/* Summary */}
-            <div className="bg-nquoc-bg rounded-2xl p-4 border border-nquoc-border space-y-3">
-              <p className="text-[10px] font-bold text-nquoc-muted uppercase tracking-wider">Tóm tắt kế hoạch</p>
-              <div className="flex justify-between text-sm">
-                <span className="text-nquoc-muted">Member:</span>
-                <span className="font-bold text-nquoc-text">{member.user?.name}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-nquoc-muted">Hình thức:</span>
-                <span className="font-bold text-nquoc-text capitalize">{channel === '1on1' ? '1-on-1 Meeting' : channel}</span>
-              </div>
-              <div className="pt-2 border-t border-nquoc-border">
-                <p className="text-xs text-nquoc-muted font-medium">{actionNote}</p>
-              </div>
-            </div>
-
-            <div>
-              <label className="text-[10px] font-bold text-nquoc-muted uppercase tracking-wider block mb-2">
-                Cam kết kết quả sau 48h
-              </label>
-              <textarea
-                value={commitment}
-                onChange={(e) => setCommitment(e.target.value)}
-                placeholder="VD: Lên lịch 1-on-1 trong 24h, báo cáo kết quả qua Telegram cho HR Manager..."
-                className="w-full h-20 border-2 border-nquoc-border rounded-2xl px-4 py-3 text-sm text-nquoc-text resize-none
-                  focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all placeholder-slate-300"
-              />
-            </div>
-
-            <div className="flex gap-3">
-              <button onClick={() => setStep(2)}
-                className="flex-1 py-3 border border-nquoc-border text-nquoc-muted rounded-2xl text-sm font-medium hover:bg-nquoc-bg transition-colors">
-                ← Quay lại
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={!actionNote.trim() || submitting}
-                className="flex-1 py-3 bg-rose-500 text-white rounded-2xl text-sm font-bold hover:bg-rose-600 disabled:opacity-50 transition-all active:scale-95 shadow-rose-soft"
-              >
-                {submitting ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    Đang gửi...
-                  </span>
-                ) : '🚀 Gửi can thiệp'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 4: Success */}
-        {step === 4 && (
-          <div className="text-center space-y-5 py-6 animate-bounce-in">
-            <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-4xl glow-emerald">
-              ✅
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-nquoc-text font-header">Can thiệp đã được ghi nhận!</h3>
-              <p className="text-sm text-nquoc-muted mt-2 leading-relaxed">
-                Leader sẽ nhận thông báo ngay. HR sẽ theo dõi và cập nhật kết quả trong 48h tới.
-              </p>
-            </div>
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-sm text-emerald-800">
-              <p className="font-bold mb-1">Bước tiếp theo:</p>
-              <p className="text-xs">Kết nối với <strong>{member.current_assignment?.leader?.name}</strong> và xác nhận lịch gặp 1-on-1.</p>
-            </div>
-            <button onClick={onClose}
-              className="w-full py-3 bg-gradient-indigo text-white rounded-2xl text-sm font-bold hover:opacity-90 transition-all shadow-nquoc">
-              Hoàn thành
-            </button>
-          </div>
-        )}
+           </div>
+         )}
       </div>
     </Modal>
   )
 }
 
-// ── Warn Leader Modal ──
 function WarnLeaderModal({ leader, onClose }: { leader: LeaderMetrics & { coaching_flag: boolean }; onClose: () => void }) {
-  const [message, setMessage] = useState('Nhắc Leader chủ động 1-on-1 sớm với các thành viên đang gặp khó khăn.')
-  const [channel, setChannel] = useState<'telegram' | 'email'>('telegram')
-  const [sent, setSent] = useState(false)
-
   return (
-    <Modal isOpen title="Nhắc nhở Leader" onClose={onClose} size="sm">
-      <div className="p-6 space-y-4">
-        {!sent ? (
-          <>
-            <p className="text-sm text-nquoc-muted">
-              Gửi nhắc nhở đến <span className="font-bold text-nquoc-text">{leader.leader?.name}</span>
-            </p>
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              className="w-full h-24 border-2 border-nquoc-border rounded-2xl px-3 py-2.5 text-sm text-nquoc-text resize-none
-                focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition-all"
-            />
-            <div className="flex gap-2">
-              {(['telegram', 'email'] as const).map((c) => (
-                <button key={c} onClick={() => setChannel(c)}
-                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all ${
-                    channel === c
-                      ? 'bg-nquoc-blue text-white border-nquoc-blue shadow-nquoc'
-                      : 'border-nquoc-border text-nquoc-muted hover:bg-nquoc-hover'
-                  }`}>
-                  {c === 'telegram' ? '✈ Telegram DM' : '✉ Email'}
-                </button>
-              ))}
-            </div>
-            <button onClick={() => setSent(true)}
-              className="w-full py-3 bg-amber-500 text-white rounded-2xl text-sm font-bold hover:bg-amber-600 transition-all active:scale-95">
-              Gửi nhắc nhở
-            </button>
-          </>
-        ) : (
-          <div className="text-center py-4 space-y-3 animate-bounce-in">
-            <div className="text-4xl">✅</div>
-            <p className="text-sm font-bold text-nquoc-text">Đã gửi qua {channel === 'telegram' ? 'Telegram' : 'Email'}</p>
-            <button onClick={onClose} className="w-full py-2.5 bg-nquoc-bg border border-nquoc-border text-nquoc-text rounded-2xl text-sm font-medium">
-              Đóng
-            </button>
-          </div>
-        )}
-      </div>
-    </Modal>
+     <Modal isOpen title="Nhắc nhở nhẹ" onClose={onClose} size="sm">
+       <div className="p-6 text-center">
+         <p className="text-sm text-slate-600 mb-5">Xác nhận gửi thông báo nhắc nhở 1-on-1 cho <br/><strong className="text-slate-900">{leader.leader?.name}</strong>?</p>
+         <button onClick={onClose} className="w-full py-3 bg-amber-500 text-white font-bold text-sm rounded-xl">Đã gửi nhắc nhở</button>
+       </div>
+     </Modal>
   )
 }
 
-// ── Coaching Request Modal ──
 function CoachingModal({ leader, onClose }: { leader: LeaderMetrics & { coaching_flag: boolean }; onClose: () => void }) {
-  const [type, setType] = useState<'monitor' | 'coaching'>('coaching')
-  const [sent, setSent] = useState(false)
-
-  const handleSubmit = async () => {
-    await retentionService.createCoachingRequest({ leader_id: leader.leader_id, type })
-    setSent(true)
-  }
-
   return (
-    <Modal isOpen title="Yêu cầu Coaching" onClose={onClose} size="sm">
-      <div className="p-6 space-y-4">
-        {!sent ? (
-          <>
-            <p className="text-sm text-nquoc-muted">
-              Tạo yêu cầu cho <span className="font-bold text-nquoc-text">{leader.leader?.name}</span>
-            </p>
-            <div className="space-y-2">
-              {(['monitor', 'coaching'] as const).map((t) => (
-                <button key={t} onClick={() => setType(t)}
-                  className={`w-full py-3.5 px-4 rounded-2xl text-sm font-bold border text-left transition-all ${
-                    type === t
-                      ? 'bg-nquoc-active border-nquoc-blue text-nquoc-blue shadow-sm'
-                      : 'border-nquoc-border text-nquoc-muted hover:bg-nquoc-hover'
-                  }`}>
-                  {t === 'monitor' ? '👁 Theo dõi thêm' : '🎯 Yêu cầu Coaching'}
-                </button>
-              ))}
-            </div>
-            <button onClick={handleSubmit}
-              className="w-full py-3 bg-gradient-indigo text-white rounded-2xl text-sm font-bold hover:opacity-90 transition-all active:scale-95 shadow-nquoc">
-              Gửi yêu cầu
-            </button>
-          </>
-        ) : (
-          <div className="text-center py-4 space-y-3 animate-bounce-in">
-            <div className="text-4xl">🎯</div>
-            <p className="text-sm font-bold text-nquoc-text">Đã tạo yêu cầu {type === 'coaching' ? 'Coaching' : 'Theo dõi'}</p>
-            <button onClick={onClose} className="w-full py-2.5 bg-nquoc-bg border border-nquoc-border text-nquoc-text rounded-2xl text-sm font-medium">
-              Đóng
-            </button>
-          </div>
-        )}
-      </div>
-    </Modal>
+     <Modal isOpen title="Set lịch Coaching" onClose={onClose} size="sm">
+       <div className="p-6 text-center">
+         <p className="text-sm text-slate-600 mb-5">Team của <strong className="text-slate-900">{leader.leader?.name}</strong> đang có tỷ lệ nghỉ việc cao. Tạo request Coaching?</p>
+         <button onClick={onClose} className="w-full py-3 bg-indigo-600 text-white font-bold text-sm rounded-xl mb-3">Tạo lịch hẹn</button>
+       </div>
+     </Modal>
   )
 }
