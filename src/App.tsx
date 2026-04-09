@@ -25,7 +25,9 @@ function useMockAuth() {
 export default function App() {
   const { user: supabaseUser, loading, switchRole } = useAuth()
   const { toasts, addToast, removeToast } = useToast()
-  const mockUser = import.meta.env.DEV ? useMockAuth() : null
+  const isVercelPreview = window.location.hostname.includes('vercel.app')
+  const isDemoMode = new URLSearchParams(window.location.search).has('demo')
+  const mockUser = (import.meta.env.DEV || isVercelPreview || isDemoMode) ? useMockAuth() : null
 
   const user = supabaseUser ?? mockUser
 
@@ -37,9 +39,6 @@ export default function App() {
   if (loading && !mockUser) return <PageLoading />
 
   if (!user) {
-    const isVercelPreview = window.location.hostname.includes('vercel.app')
-    const isDemoMode = new URLSearchParams(window.location.search).has('demo')
-
     if (import.meta.env.DEV || isVercelPreview || isDemoMode) {
       return <DevModeLogin />
     }
