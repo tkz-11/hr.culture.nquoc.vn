@@ -1,4 +1,3 @@
-import React from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import type { AuthUser } from '../types'
 import { Badge } from './Badge'

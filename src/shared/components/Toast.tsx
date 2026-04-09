@@ -1,4 +1,3 @@
-import React from 'react'
 import type { Toast, ToastType } from '../hooks/useToast'
 
 const typeClasses: Record<ToastType, string> = {

@@ -12,7 +12,6 @@ const mockMembers: HRMember[] = [
       id: 'a1', member_id: '1', leader_id: 'l1', status: 'stuck',
       stuck_since: new Date(Date.now() - 8 * 86400000).toISOString(),
       assigned_at: new Date(Date.now() - 15 * 86400000).toISOString(),
-      created_at: new Date().toISOString(),
       leader: { name: 'Trần Văn Bình' },
     },
   },
@@ -23,7 +22,6 @@ const mockMembers: HRMember[] = [
     current_assignment: {
       id: 'a2', member_id: '2', leader_id: 'l2', status: 'talking',
       assigned_at: new Date(Date.now() - 10 * 86400000).toISOString(),
-      created_at: new Date().toISOString(),
       leader: { name: 'Phạm Ngọc Lan' },
     },
   },
@@ -34,7 +32,6 @@ const mockMembers: HRMember[] = [
     current_assignment: {
       id: 'a3', member_id: '3', leader_id: 'l3', status: 'none',
       assigned_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-      created_at: new Date().toISOString(),
       leader: { name: 'Hoàng Minh Tuấn' },
     },
   },
@@ -114,7 +111,6 @@ export const retentionHandlers = [
       leader_id: body.leader_id as string,
       status: 'none',
       assigned_at: new Date().toISOString(),
-      created_at: new Date().toISOString(),
     }
     return HttpResponse.json({ success: true, data: assignment })
   }),

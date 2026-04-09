@@ -1,5 +1,3 @@
-import React from 'react'
-
 export function LoadingSpinner() {
   return (
     <div className="flex items-center justify-center w-full h-full min-h-[200px]">

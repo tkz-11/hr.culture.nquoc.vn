@@ -567,7 +567,7 @@ function TeamHealthTab() {
 }
 
 // ── Share Story Modal ──
-function ShareStoryModal({ user, onClose }: { user: AuthUser; onClose: () => void }) {
+function ShareStoryModal({ user: _user, onClose }: { user: AuthUser; onClose: () => void }) {
   const [step, setStep] = useState(1)
   const [orgs, setOrgs] = useState<OrgStructure[]>([])
   const [form, setForm] = useState({

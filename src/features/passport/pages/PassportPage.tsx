@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import type { AuthUser, PassportProfile, CommHeatmapEntry, AnalyzeResult, RewriteResult } from '../../../shared/types'
 import { passportService } from '../services/passport.service'
 import { LoadingSpinner } from '../../../shared/components/LoadingSpinner'
 import { Badge } from '../../../shared/components/Badge'
-import { Modal } from '../../../shared/components/Modal'
 
 interface PassportPageProps {
   user: AuthUser
@@ -65,7 +64,7 @@ export function PassportPage({ user }: PassportPageProps) {
 }
 
 // ── Member Dashboard ──
-function MemberDashboard({ user }: { user: AuthUser }) {
+function MemberDashboard({ user: _user }: { user: AuthUser }) {
   const [data, setData] = useState<{
     profile: PassportProfile
     heatmap: CommHeatmapEntry[]

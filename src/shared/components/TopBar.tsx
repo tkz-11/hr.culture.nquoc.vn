@@ -1,4 +1,3 @@
-import React from 'react'
 import type { AuthUser, UserRole } from '../types'
 import { Badge } from './Badge'
 
