@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: 'Manrope', sans-serif;
+    background-color: #f8fafc;
+    color: #1e293b;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Lexend', sans-serif;
+  }
+
+  #root {
+    width: 100%;
+    min-height: 100vh;
+  }
+}
+
+@layer utilities {
+  /* Communication Passport highlight patterns */
+  .hl-silence {
+    background: #fee2e2;
+    border-bottom: 2px solid #ef4444;
+    padding: 1px 2px;
+    border-radius: 2px;
+  }
+
+  .hl-vague {
+    background: #fef3c7;
+    border-bottom: 2px solid #d97706;
+    padding: 1px 2px;
+    border-radius: 2px;
+  }
+
+  .hl-direct {
+    background: #d1fae5;
+    border-bottom: 2px solid #059669;
+    padding: 1px 2px;
+    border-radius: 2px;
+  }
+}
