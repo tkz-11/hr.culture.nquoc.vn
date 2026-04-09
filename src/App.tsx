@@ -6,6 +6,7 @@ import { Sidebar } from './shared/components/Sidebar'
 import { TopBar } from './shared/components/TopBar'
 import { ToastContainer } from './shared/components/Toast'
 import { PageLoading } from './shared/components/LoadingSpinner'
+import { NBotCoach } from './shared/components/NBotCoach'
 import { AppRoutes } from './routes'
 import type { AuthUser } from './shared/types'
 
@@ -57,6 +58,7 @@ export default function App() {
           </main>
         </div>
       </div>
+      <NBotCoach user={user} />
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </BrowserRouter>
   )

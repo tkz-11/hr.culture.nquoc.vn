@@ -225,7 +225,7 @@ function HomeFeed({ user: _user }: { user: AuthUser }) {
 // ── Story Card ──
 function StoryCard({ story, featured }: { story: CultureStory; featured?: boolean }) {
   const [reacted, setReacted] = useState<string | null>(null)
-  const [reactions, setReactions] = useState({ fire: 12, idea: 8, hug: 5 })
+  const [reactions, setReactions] = useState({ brave: 12, respect: 8, learn: 5 })
 
   const expLabels: Record<string, string> = {
     judgement: 'Phán đoán', communication: 'Giao tiếp',
@@ -296,24 +296,26 @@ function StoryCard({ story, featured }: { story: CultureStory; featured?: boolea
         {story.content}
       </p>
 
-      {/* Reactions */}
-      <div className="flex items-center gap-3 pt-3 mt-3 border-t border-nquoc-border">
+      {/* Culture-specific Reactions */}
+      <div className="flex items-center gap-2 pt-3 mt-3 border-t border-nquoc-border flex-wrap">
         {[
-          { key: 'fire', icon: '🔥', label: 'Bùng cháy' },
-          { key: 'idea', icon: '💡', label: 'Học được' },
-          { key: 'hug', icon: '🤗', label: 'Đồng cảm' },
-        ].map(({ key, icon, label }) => (
+          { key: 'brave', icon: '💪', label: 'Dám làm', desc: 'Tôi ngưỡng mộ sự dũng cảm này' },
+          { key: 'respect', icon: '🙌', label: 'Tôn trọng', desc: 'Cảm ơn vì đã nói thật' },
+          { key: 'learn', icon: '💡', label: 'Học được', desc: 'Tôi rút ra bài học từ câu chuyện này' },
+        ].map(({ key, icon, label, desc }) => (
           <button
             key={key}
             onClick={() => handleReact(key)}
-            title={label}
-            className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-xl transition-all active:scale-95 ${
+            title={desc}
+            className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl transition-all active:scale-95 ${
               reacted === key
-                ? 'bg-indigo-50 text-indigo-600 border border-indigo-200'
-                : 'text-nquoc-muted hover:bg-slate-50 hover:text-slate-600'
+                ? 'bg-indigo-50 text-indigo-600 border border-indigo-200 shadow-sm'
+                : 'text-nquoc-muted hover:bg-slate-50 hover:text-slate-700 border border-transparent hover:border-slate-200'
             }`}
           >
-            {icon} <span>{reactions[key as keyof typeof reactions]}</span>
+            <span className={`transition-transform ${reacted === key ? 'scale-125' : 'scale-100'}`}>{icon}</span>
+            <span>{label}</span>
+            <span className="tabular-nums opacity-70">{reactions[key as keyof typeof reactions]}</span>
           </button>
         ))}
         <div className="ml-auto">
