@@ -4,7 +4,10 @@ import './index.css'
 import App from './App.tsx'
 
 async function prepare() {
-  if (import.meta.env.DEV) {
+  const isVercelPreview = window.location.hostname.includes('vercel.app')
+  const isDemoMode = new URLSearchParams(window.location.search).has('demo')
+
+  if (import.meta.env.DEV || isVercelPreview || isDemoMode) {
     const { worker } = await import('./mocks/browser')
     await worker.start({ onUnhandledRequest: 'bypass' })
   }
