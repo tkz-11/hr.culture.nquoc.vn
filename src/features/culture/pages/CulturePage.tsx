@@ -9,6 +9,10 @@ import { LoadingSpinner } from '../../../shared/components/LoadingSpinner'
 import { Badge } from '../../../shared/components/Badge'
 import { Modal } from '../../../shared/components/Modal'
 import { EmptyState } from '../../../shared/components/EmptyState'
+import { RadarChart } from '../../../shared/components/RadarChart'
+import { LineChart } from '../../../shared/components/LineChart'
+import { ErrorBoundary } from '../../../shared/components/ErrorBoundary'
+import { Skeleton, CardSkeleton } from '../../../shared/components/Skeleton'
 
 interface CulturePageProps {
   user: AuthUser
@@ -86,25 +90,61 @@ export function CulturePage({ user }: CulturePageProps) {
 function HomeFeed({ user: _user }: { user: AuthUser }) {
   const [stories, setStories] = useState<CultureStory[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [meta, setMeta] = useState<{ next_cursor?: string; has_next: boolean } | null>(null)
 
   useEffect(() => {
-    cultureService.getFeed().then(({ items }) => {
-      setStories(items)
+    cultureService.getFeed().then((res) => {
+      setStories(res.items)
+      setMeta(res.meta)
       setLoading(false)
     })
   }, [])
 
-  if (loading) return <LoadingSpinner />
+  const loadMore = async () => {
+    if (!meta?.next_cursor || loadingMore) return
+    setLoadingMore(true)
+    try {
+      const res = await cultureService.getFeed({ cursor: meta.next_cursor })
+      setStories(prev => [...prev, ...res.items])
+      setMeta(res.meta)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <CardSkeleton />
+        <CardSkeleton />
+        <CardSkeleton />
+      </div>
+    )
+  }
 
   if (stories.length === 0) {
     return <EmptyState icon="📖" title="Chưa có câu chuyện" description="Hãy là người đầu tiên chia sẻ câu chuyện của bạn!" />
   }
 
   return (
-    <div className="space-y-4">
-      {stories.map((story) => (
-        <StoryCard key={story.id} story={story} />
-      ))}
+    <div className="space-y-4 pb-12">
+      <ErrorBoundary feature="Bảng tin Văn hóa">
+        {stories.map((story) => (
+          <StoryCard key={story.id} story={story} />
+        ))}
+        {meta?.has_next && (
+          <div className="pt-4 flex justify-center">
+            <button
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="px-8 py-3 bg-white border border-nquoc-border rounded-2xl text-sm font-bold text-nquoc-blue hover:bg-nquoc-bg transition-all active:scale-95 shadow-sm shadow-blue-50"
+            >
+              {loadingMore ? 'Đang tải...' : 'Xem thêm câu chuyện'}
+            </button>
+          </div>
+        )}
+      </ErrorBoundary>
     </div>
   )
 }
@@ -370,16 +410,31 @@ function JourneyTab({ user: _user }: { user: AuthUser }) {
     current_scores: BehaviorScores
     radar_data: { try: number; share: number; learn: number; help: number }
   } | null>(null)
+  const [trend, setTrend] = useState<{ week_of: string; try_score: number; help_score: number }[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    cultureService.getJourneyMe().then((d) => {
+    Promise.all([
+      cultureService.getJourneyMe(),
+      cultureService.getJourneyTrend()
+    ]).then(([d, t]) => {
       setData(d)
+      setTrend(t as any) // Simplified mapping
       setLoading(false)
     })
   }, [])
 
-  if (loading) return <LoadingSpinner />
+  if (loading) return (
+    <div className="space-y-6">
+      <Skeleton className="h-32 w-full rounded-[32px]" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Skeleton className="h-24 rounded-[32px]" />
+        <Skeleton className="h-24 rounded-[32px]" />
+        <Skeleton className="h-24 rounded-[32px]" />
+        <Skeleton className="h-24 rounded-[32px]" />
+      </div>
+    </div>
+  )
   if (!data) return null
 
   const milestoneOrder: JourneyMilestoneRecord['milestone'][] = ['1m', '3m', '6m', '1y', 'out']
@@ -388,67 +443,104 @@ function JourneyTab({ user: _user }: { user: AuthUser }) {
   }
 
   return (
-    <div className="space-y-5">
-      {/* Milestone timeline */}
-      <div className="bg-white rounded-2xl border border-nquoc-border p-5">
-        <h2 className="text-sm font-semibold text-nquoc-text font-header mb-5">Cột mốc hành trình</h2>
-        <div className="flex items-center">
-          {milestoneOrder.map((m, i) => {
-            const record = data.milestones.find((r) => r.milestone === m)
-            const completed = !!record
-            return (
-              <React.Fragment key={m}>
-                <div className="flex flex-col items-center">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
-                    completed ? 'bg-nquoc-blue text-white' : 'bg-gray-100 text-nquoc-muted'
-                  }`}>
-                    {completed ? '✓' : i + 1}
+    <ErrorBoundary feature="Hành trình Văn hóa">
+      <div className="space-y-6">
+        {/* Milestone timeline */}
+        <div className="bg-white rounded-[32px] border border-nquoc-border p-8 shadow-sm">
+          <h2 className="text-sm font-bold text-nquoc-text font-header mb-8 uppercase tracking-wider">Cột mốc hành trình</h2>
+          <div className="flex items-center">
+            {milestoneOrder.map((m, i) => {
+              const record = data.milestones.find((r) => r.milestone === m)
+              const completed = !!record
+              return (
+                <React.Fragment key={m}>
+                  <div className="flex flex-col items-center">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold shadow-lg transition-all ${
+                      completed ? 'bg-nquoc-blue text-white shadow-blue-100 scale-110' : 'bg-gray-50 text-nquoc-muted border border-nquoc-border'
+                    }`}>
+                      {completed ? '✓' : i + 1}
+                    </div>
+                    <p className="text-[10px] font-bold text-nquoc-muted mt-3 text-center uppercase tracking-tight">{milestoneLabels[m]}</p>
+                    {record && (
+                      <p className="text-[10px] text-nquoc-blue font-bold mt-1">
+                        {new Date(record.completed_at).toLocaleDateString('vi-VN')}
+                      </p>
+                    )}
                   </div>
-                  <p className="text-[10px] text-nquoc-muted mt-1.5 text-center">{milestoneLabels[m]}</p>
-                  {record && (
-                    <p className="text-[10px] text-nquoc-blue font-medium">
-                      {new Date(record.completed_at).toLocaleDateString('vi-VN')}
-                    </p>
+                  {i < milestoneOrder.length - 1 && (
+                    <div className={`flex-1 h-0.5 mx-2 ${completed ? 'bg-nquoc-blue' : 'bg-gray-100'}`} />
                   )}
-                </div>
-                {i < milestoneOrder.length - 1 && (
-                  <div className={`flex-1 h-0.5 mx-1 ${completed ? 'bg-nquoc-blue' : 'bg-gray-100'}`} />
-                )}
-              </React.Fragment>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Behavior scores */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { key: 'try_score', label: 'Dám làm', color: 'text-blue-600' },
-          { key: 'share_score', label: 'Chia sẻ', color: 'text-purple-600' },
-          { key: 'learn_score', label: 'Học hỏi', color: 'text-emerald-600' },
-          { key: 'help_score', label: 'Hỗ trợ', color: 'text-amber-600' },
-        ].map((dim) => (
-          <div key={dim.key} className="bg-white rounded-xl border border-nquoc-border p-4">
-            <p className="text-[11px] text-nquoc-muted mb-1">{dim.label}</p>
-            <p className={`text-2xl font-bold font-header ${dim.color}`}>
-              {(data.current_scores[dim.key as keyof BehaviorScores] as number).toFixed(1)}
-            </p>
+                </React.Fragment>
+              )
+            })}
           </div>
-        ))}
-      </div>
+        </div>
 
-      {/* XP & streak */}
-      <div className="bg-nquoc-blue rounded-2xl p-4 flex items-center justify-between text-white">
-        <div>
-          <p className="text-xs opacity-70">Tổng XP</p>
-          <p className="text-2xl font-bold font-header">{data.current_scores.total_xp}</p>
+        {/* Behavior scores and Radar */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1 bg-white rounded-[32px] border border-nquoc-border p-8 shadow-sm">
+            <h3 className="text-sm font-bold text-nquoc-text font-header mb-6 uppercase tracking-wider text-center">Định danh văn hóa</h3>
+            <div className="h-[250px]">
+              <RadarChart 
+                labels={['Dám làm', 'Chia sẻ', 'Học hỏi', 'Hỗ trợ']}
+                data={[data.radar_data.try, data.radar_data.share, data.radar_data.learn, data.radar_data.help]}
+                max={10}
+                color="#3b82f6"
+              />
+            </div>
+          </div>
+
+          <div className="lg:col-span-2 space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {[
+                { key: 'try_score', label: 'Dám làm', color: 'text-blue-600', bg: 'bg-blue-50' },
+                { key: 'share_score', label: 'Chia sẻ', color: 'text-purple-600', bg: 'bg-purple-50' },
+                { key: 'learn_score', label: 'Học hỏi', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                { key: 'help_score', label: 'Hỗ trợ', color: 'text-amber-600', bg: 'bg-amber-50' },
+              ].map((dim) => (
+                <div key={dim.key} className={`${dim.bg} rounded-[28px] p-6 border border-white transition-all hover:scale-105`}>
+                  <p className="text-[10px] font-bold text-nquoc-muted mb-2 uppercase tracking-widest">{dim.label}</p>
+                  <p className={`text-3xl font-extrabold font-header ${dim.color}`}>
+                    {(data.current_scores[dim.key as keyof BehaviorScores] as number).toFixed(1)}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* Trend Chart */}
+            <div className="bg-white rounded-[32px] border border-nquoc-border p-8 shadow-sm h-[200px]">
+               <LineChart 
+                 labels={trend.map(t => t.week_of)}
+                 datasets={[
+                   { label: 'Dám làm', data: trend.map(t => t.try_score), color: '#3b82f6' },
+                   { label: 'Hỗ trợ', data: trend.map(t => t.help_score), color: '#f59e0b' }
+                 ]}
+               />
+            </div>
+          </div>
         </div>
-        <div className="text-right">
-          <p className="text-xs opacity-70">Streak hiện tại</p>
-          <p className="text-2xl font-bold font-header">{data.current_scores.streak} 🔥</p>
+
+        {/* XP & streak summarized */}
+        <div className="bg-gradient-to-r from-nquoc-blue to-indigo-600 rounded-[32px] p-8 flex items-center justify-between text-white shadow-xl shadow-blue-100 relative overflow-hidden">
+          <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none transform translate-y-1/4">
+             <span className="text-9xl font-bold">XP</span>
+          </div>
+          <div className="relative z-10">
+            <p className="text-xs font-bold uppercase tracking-widest opacity-80 mb-2">Uy tín cá nhân</p>
+            <div className="flex items-baseline gap-2">
+              <p className="text-5xl font-extrabold font-header tracking-tighter">{data.current_scores.total_xp}</p>
+              <p className="text-xl font-bold opacity-80 uppercase font-header">Culture XP</p>
+            </div>
+          </div>
+          <div className="text-right flex flex-col items-end relative z-10">
+            <p className="text-xs font-bold uppercase tracking-widest opacity-80 mb-2">Chuỗi ngày bền bỉ</p>
+            <div className="bg-white/20 backdrop-blur-md rounded-2xl px-6 py-3 border border-white/20">
+              <p className="text-2xl font-extrabold font-header">{data.current_scores.streak} 🔥</p>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </ErrorBoundary>
   )
 }
 

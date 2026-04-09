@@ -3,8 +3,9 @@ import type { AuthUser, HRMember, RetentionDashboard, LeaderMetrics } from '../.
 import { retentionService } from '../services/retention.service'
 import { Badge, riskBadge } from '../../../shared/components/Badge'
 import { Modal } from '../../../shared/components/Modal'
-import { LoadingSpinner } from '../../../shared/components/LoadingSpinner'
 import { EmptyState } from '../../../shared/components/EmptyState'
+import { Skeleton, TableSkeleton } from '../../../shared/components/Skeleton'
+import { ErrorBoundary } from '../../../shared/components/ErrorBoundary'
 
 interface RetentionPageProps {
   user: AuthUser
@@ -39,10 +40,22 @@ export function RetentionPage({ user }: RetentionPageProps) {
     load()
   }, [user.role])
 
-  if (loading) return <LoadingSpinner />
+  if (loading) return (
+    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-1/4" />
+        <Skeleton className="h-4 w-1/2" />
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24 rounded-[28px]" />)}
+      </div>
+      <TableSkeleton />
+    </div>
+  )
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      <ErrorBoundary feature="Retention Radar">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-nquoc-text font-header">Retention Radar</h1>
@@ -179,6 +192,7 @@ export function RetentionPage({ user }: RetentionPageProps) {
           onClose={() => setCoachLeader(null)}
         />
       )}
+      </ErrorBoundary>
     </div>
   )
 }

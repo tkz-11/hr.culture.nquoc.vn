@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from 'react'
-import type { AuthUser, PassportProfile, CommHeatmapEntry, AnalyzeResult, RewriteResult } from '../../../shared/types'
+import type { AuthUser, PassportProfile, CommHeatmapEntry, AnalyzeResult, RewriteResult, LeaderIntegrity } from '../../../shared/types'
 import { passportService } from '../services/passport.service'
 import { LoadingSpinner } from '../../../shared/components/LoadingSpinner'
 import { Badge } from '../../../shared/components/Badge'
+import { LineChart } from '../../../shared/components/LineChart'
+import { RadarChart } from '../../../shared/components/RadarChart'
+import { HRPassportDashboard } from '../components/HRPassportDashboard'
 
 interface PassportPageProps {
   user: AuthUser
 }
 
-type TabKey = 'member' | 'leader' | 'mirror' | 'train'
+type TabKey = 'member' | 'leader' | 'mirror' | 'train' | 'hr_dashboard'
 
 const tabs: { key: TabKey; label: string; roles?: string[] }[] = [
   { key: 'member', label: 'Bảng thành viên' },
   { key: 'leader', label: 'Bảng leader', roles: ['leader', 'hr_manager'] },
+  { key: 'hr_dashboard', label: 'Quản trị HR', roles: ['hr_manager'] },
   { key: 'mirror', label: 'Đối chiếu chung' },
   { key: 'train', label: 'Giao tiếp thẳng thắn' },
 ]
@@ -60,6 +64,7 @@ export function PassportPage({ user }: PassportPageProps) {
           </div>
         )}
         {activeTab === 'train' && <RewriteLab />}
+        {activeTab === 'hr_dashboard' && <HRPassportDashboard />}
       </div>
     </div>
   )
@@ -148,11 +153,29 @@ function MemberDashboard({ user: _user }: { user: AuthUser }) {
         <HeatmapGrid heatmap={heatmap} />
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <StatCard label="Điểm giao tiếp" value={profile.directness_score.toFixed(1)} unit="/10" />
-        <StatCard label="Kịch bản hoàn thành" value={String(data.scenarios_done)} unit=" buổi" />
-        <StatCard label="Streak hiện tại" value={String(profile.streak_days)} unit=" ngày" />
+      {/* Stats and Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-1 space-y-4">
+          <StatCard label="Điểm giao tiếp" value={profile.directness_score.toFixed(1)} unit="/10" />
+          <StatCard label="Streak hiện tại" value={String(profile.streak_days)} unit=" ngày" />
+          <StatCard label="Kịch bản" value={String(data.scenarios_done)} unit=" buổi" />
+        </div>
+        
+        <div className="lg:col-span-2 bg-white rounded-[32px] border border-nquoc-border p-8 shadow-sm">
+          <h3 className="text-sm font-bold text-nquoc-text font-header mb-4 uppercase tracking-wider">Chỉ số an toàn tâm lý (7 ngày)</h3>
+          <div className="h-[180px]">
+            <LineChart 
+              labels={['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']}
+              datasets={[{
+                label: 'Safety Index',
+                data: [7.2, 7.5, 7.1, 7.8, 8.2, 8.0, 8.5], // Demo data
+                color: '#8b5cf6',
+                fill: true
+              }]}
+              max={10}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Silence cost calculator */}
@@ -276,7 +299,7 @@ function SilenceCostCalc() {
 // ── Leader Dashboard ──
 function LeaderDashboard({ user }: { user: AuthUser }) {
   const [leaderData, setLeaderData] = useState<{
-    integrity: { integrity_score: number; vague_phrases?: string[] }
+    integrity: LeaderIntegrity
     vague_phrases_this_week: string[]
     improvement_suggestions: string[]
   } | null>(null)
@@ -297,26 +320,43 @@ function LeaderDashboard({ user }: { user: AuthUser }) {
         <p className="text-sm opacity-80 mt-1">Điểm liêm chính của leader</p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-nquoc-border p-5 space-y-3">
-        <p className="text-sm font-semibold text-nquoc-text font-header">Ngôn ngữ mơ hồ tuần này</p>
-        <p className="text-2xl font-bold text-amber-600 font-header">{leaderData.vague_phrases_this_week.length} <span className="text-sm font-normal text-nquoc-muted">lần</span></p>
-        {leaderData.vague_phrases_this_week.map((phrase, i) => (
-          <p key={i} className="text-sm italic text-nquoc-muted">"{phrase}"</p>
-        ))}
-      </div>
-
-      <div className="bg-white rounded-2xl border border-nquoc-border p-5 space-y-2">
-        <p className="text-sm font-semibold text-nquoc-text font-header">Gợi ý cải thiện</p>
-        {leaderData.improvement_suggestions.map((s, i) => (
-          <div key={i} className="flex gap-2 text-sm text-nquoc-muted">
-            <span className="text-nquoc-blue mt-0.5">→</span>
-            <span>{s}</span>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-[32px] border border-nquoc-border p-8 shadow-sm">
+          <h3 className="text-sm font-bold text-nquoc-text font-header mb-6 uppercase tracking-wider">Ma trận liêm chính Leader</h3>
+          <div className="h-[300px]">
+            <RadarChart 
+              labels={['Phản hồi', 'WYFLS', 'Ngôn ngữ', 'Kịch bản', 'Thẳng thắn']}
+              data={[
+                leaderData.integrity.feedback_timeliness || 7,
+                leaderData.integrity.wyfl_compliance || 8,
+                leaderData.integrity.language_standard || 6,
+                leaderData.integrity.scenario_completion || 9,
+                leaderData.integrity.directness || 5
+              ]}
+              max={10}
+              color="#8b5cf6"
+            />
           </div>
-        ))}
-      </div>
+        </div>
 
-      <div className="bg-slate-50 border border-nquoc-border rounded-2xl p-4 text-sm text-nquoc-muted italic">
-        "Leader là người đặt chuẩn ngôn ngữ cho cả team. Khi leader nói thẳng, team sẽ nói thẳng."
+        <div className="space-y-6">
+          <div className="bg-white rounded-[32px] border border-nquoc-border p-8 shadow-sm">
+            <p className="text-[10px] font-bold text-nquoc-muted mb-4 uppercase tracking-widest">Gợi ý từ AI</p>
+            <div className="space-y-4">
+              {leaderData.improvement_suggestions.map((s, i) => (
+                <div key={i} className="flex gap-4 p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs text-nquoc-muted leading-relaxed group hover:border-nquoc-blue/20 transition-all">
+                  <span className="text-nquoc-blue font-bold text-lg leading-none group-hover:scale-125 transition-transform">→</span>
+                  <span>{s}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div className="bg-slate-50 border border-nquoc-border rounded-[32px] p-6 text-sm text-nquoc-muted italic flex items-center gap-4">
+            <span className="text-2xl">💡</span>
+            <p>"Leader là người đặt chuẩn ngôn ngữ cho cả team. Khi leader nói thẳng, cả tổ chức sẽ chuyển động nhanh hơn."</p>
+          </div>
+        </div>
       </div>
     </div>
   )
