@@ -1,10 +1,15 @@
+// src/mocks/browser.ts
 import { setupWorker } from 'msw/browser'
-import { retentionHandlers } from './handlers/retention.handlers'
-import { passportHandlers } from './handlers/passport.handlers'
-import { cultureHandlers } from './handlers/culture.handlers'
+import { authHandlers }        from './handlers/auth'
+import { hrOrgHandlers }       from './handlers/hr-org'
+import { hrRetentionHandlers } from './handlers/hr-retention'
+import { hrPassportHandlers }  from './handlers/hr-passport'
+import { hrCultureHandlers }   from './handlers/hr-culture'
 
 export const worker = setupWorker(
-  ...retentionHandlers,
-  ...passportHandlers,
-  ...cultureHandlers
+  ...authHandlers,
+  ...hrOrgHandlers,
+  ...hrRetentionHandlers,
+  ...hrPassportHandlers,
+  ...hrCultureHandlers,
 )

@@ -1,0 +1,21 @@
+name: Label mock-changed PRs
+
+on:
+  pull_request:
+    paths:
+      - 'src/mocks/**'
+      - 'nquoc-hr-culture-architecture.md'
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.addLabels({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['mock-changed']
+            })
