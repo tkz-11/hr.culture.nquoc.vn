@@ -1,7 +1,7 @@
 // src/mocks/handlers/hr-retention.ts
 import { http, HttpResponse } from 'msw'
 import {
-  getCurrentMockUserId, getCurrentMockPerson,
+  getCurrentMockPerson,
   unauthorized, forbidden, notFound, badRequest,
 } from '../config'
 import {

@@ -3,13 +3,20 @@ import { supabase } from './supabase'
 const BASE_URL = import.meta.env.VITE_API_URL as string
 
 export class ApiError extends Error {
+  public status: number;
+  public code?: string;
+  public details?: unknown;
+
   constructor(
-    public status: number,
+    status: number,
     message: string,
-    public code?: string,
-    public details?: unknown,
+    code?: string,
+    details?: unknown,
   ) {
     super(message)
+    this.status = status;
+    this.code = code;
+    this.details = details;
     this.name = 'ApiError'
   }
 }

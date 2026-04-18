@@ -57,104 +57,90 @@ export function RetentionPage({ user }: RetentionPageProps) {
   const stableMembers = members.filter(m => m.risk_level === 'low')
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 max-w-4xl mx-auto space-y-8 animate-fade-in bg-[#f1f5f9]">
+    <div className="p-6 lg:p-8 max-w-4xl mx-auto space-y-6 animate-fade-in">
       <ErrorBoundary feature="Retention Radar">
 
-        {/* Tiêu đề & Giới thiệu */}
-        <div className="flex flex-col gap-2">
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-slate-300"></span>
-            Không gian HR & Leader
-          </p>
-          <h1 className="text-3xl font-extrabold text-slate-900 font-header tracking-tight">
-            Sức Khỏe Đội Ngũ
-          </h1>
-          <p className="text-sm font-medium text-slate-500 max-w-lg">
-            Khám phá sớm các rào cản và cảm xúc của nhân sự để có hành động can thiệp kịp thời. Đừng để sự im lặng kéo dài.
+        {/* Header */}
+        <div>
+          <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-[0.12em] mb-1">Không gian HR & Leader</p>
+          <h1 className="text-xl font-black text-[#1a1a2e] font-header tracking-tight">Radar Giữ Chân Nhân Sự</h1>
+          <p className="text-[13px] text-[#5a6a85] mt-1 max-w-lg">
+            Khám phá sớm các rào cản để can thiệp kịp thời. Đừng để sự im lặng kéo dài.
           </p>
         </div>
 
-        {/* Cảnh báo Gần Đây (Nổi bật nhất nếu có) */}
+        {/* Alert bar */}
         {dashboard && dashboard.recent_alerts.length > 0 && (
-          <div className="bg-rose-50 border-2 border-rose-100 rounded-[24px] p-5">
-             <div className="flex items-start gap-4">
-               <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-rose-500 shadow-sm shrink-0">
-                  <span className="animate-pulse">⚠</span>
-               </div>
-               <div>
-                 <h3 className="text-sm font-bold text-rose-800 uppercase tracking-widest mb-2">Đang cần bạn lúc này</h3>
-                 <div className="flex flex-col gap-2">
-                   {dashboard.recent_alerts.map((alert, i) => (
-                     <div key={i} className="flex flex-wrap items-center gap-2 text-sm text-rose-700 bg-white rounded-xl px-3 py-2 shadow-sm border border-rose-50/50">
-                       <span className="font-bold text-slate-900">{alert.member_name}</span>
-                       <span className="text-rose-300">•</span>
-                       <span className="font-medium">Bế tắc <strong className="text-rose-600">{alert.days_ago} ngày</strong></span>
-                     </div>
-                   ))}
-                 </div>
-               </div>
-             </div>
+          <div className="bg-[#fff0f0] border border-[#fecaca] rounded-[14px] p-4 flex items-start gap-3">
+            <div className="w-8 h-8 rounded-[8px] bg-[#e53e3e] flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-[11px] font-bold text-[#e53e3e] uppercase tracking-[0.1em] mb-1.5">Đang cần bạn lúc này</h3>
+              <div className="flex flex-col gap-1.5">
+                {dashboard.recent_alerts.map((alert, i) => (
+                  <div key={i} className="flex flex-wrap items-center gap-2 text-[12px] text-[#e53e3e] bg-white rounded-[8px] px-3 py-1.5 border border-[#fecaca]">
+                    <span className="font-bold text-[#1a1a2e]">{alert.member_name}</span>
+                    <span className="text-[#fecaca]">•</span>
+                    <span>Bế tắc <strong>{alert.days_ago} ngày</strong></span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Tóm tắt thông số Hành vi */}
+        {/* Stats */}
         {dashboard && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <BehaviorCard 
-              num={dashboard.high_risk} label="Cần can thiệp gấp" 
-              icon="🚨" color="rose" urgent={dashboard.high_risk > 0} 
-            />
-            <BehaviorCard 
-              num={dashboard.stuck_count} label="Đang bế tắc" 
-              icon="🔴" color="amber" urgent={dashboard.stuck_count > 2} 
-            />
-            <BehaviorCard 
-              num={dashboard.checkpoints_due} label="Sắp đến hạn Đánh giá" 
-              icon="📅" color="indigo" 
-            />
-            <BehaviorCard 
-              num={dashboard.total_members} label="Thành viên" 
-              icon="👥" color="slate" 
-            />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatCard num={dashboard.high_risk} label="Cần can thiệp" color="red" urgent={dashboard.high_risk > 0} />
+            <StatCard num={dashboard.stuck_count} label="Đang bế tắc" color="amber" urgent={dashboard.stuck_count > 2} />
+            <StatCard num={dashboard.checkpoints_due} label="Sắp đến hạn" color="blue" />
+            <StatCard num={dashboard.total_members} label="Thành viên" color="slate" />
           </div>
         )}
 
-        {/* Danh sách Cần Can Thiệp Gấp (Dạng Thẻ lớn, hành động tức thì) */}
-        <div className="space-y-4">
-           <h2 className="text-lg font-bold text-slate-900 font-header flex items-center gap-2 border-b border-slate-200 pb-3">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Ưu tiên xử lý ({highRiskMembers.length})
-           </h2>
-           
-           {highRiskMembers.length === 0 ? (
-             <EmptyState icon="🌈" title="Mọi thứ đang rất tuyệt" description="Không có nhân viên nào đang trong mức báo động đỏ." />
-           ) : (
-             <div className="grid grid-cols-1 gap-4">
-               {highRiskMembers.map(member => (
-                 <UrgentMemberCard key={member.id} member={member} onIntervene={() => setInterventionMember(member)} />
-               ))}
-             </div>
-           )}
-        </div>
-
-        {/* Danh sách Ổn định */}
-        <div className="space-y-4 pt-6">
-           <h2 className="text-lg font-bold text-slate-400 font-header flex items-center gap-2 border-b border-slate-200 pb-3">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Đang hòa nhập tốt ({stableMembers.length})
-           </h2>
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {stableMembers.map(member => (
-                 <StableMemberCard key={member.id} member={member} />
+        {/* Priority list */}
+        <div className="space-y-3">
+          <h2 className="text-[13px] font-bold text-[#1a1a2e] flex items-center gap-2 border-b border-[#f0f0f0] pb-3">
+            <span className="w-2 h-2 rounded-full bg-[#e53e3e]" /> Ưu tiên xử lý ({highRiskMembers.length})
+          </h2>
+          {highRiskMembers.length === 0 ? (
+            <EmptyState
+              icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>}
+              title="Mọi thứ đang rất tuyệt"
+              description="Không có nhân viên nào đang trong mức báo động đỏ."
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-3">
+              {highRiskMembers.map(member => (
+                <UrgentMemberCard key={member.id} member={member} onIntervene={() => setInterventionMember(member)} />
               ))}
-           </div>
+            </div>
+          )}
         </div>
 
-        {/* Dành riêng cho HR Manager: Ma Trận Leader */}
+        {/* Stable members */}
+        <div className="space-y-3">
+          <h2 className="text-[13px] font-bold text-[#94a3b8] flex items-center gap-2 border-b border-[#f0f0f0] pb-3">
+            <span className="w-2 h-2 rounded-full bg-[#10b981]" /> Đang hòa nhập tốt ({stableMembers.length})
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {stableMembers.map(member => (
+              <StableMemberCard key={member.id} member={member} />
+            ))}
+          </div>
+        </div>
+
+        {/* Leader matrix (HR only) */}
         {user.role === 'hr_manager' && leaderMetrics.length > 0 && (
-          <div className="space-y-4 pt-8">
-            <h2 className="text-lg font-bold text-slate-900 font-header flex items-center gap-2 border-b border-slate-200 pb-3">
-               <span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Phân tích Tổ chức Leader
+          <div className="space-y-3">
+            <h2 className="text-[13px] font-bold text-[#1a1a2e] flex items-center gap-2 border-b border-[#f0f0f0] pb-3">
+              <span className="w-2 h-2 rounded-full bg-[#6d28d9]" /> Phân tích Leader
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {leaderMetrics.map((lm) => (
                 <SimpleLeaderCard
                   key={lm.id}
@@ -167,13 +153,7 @@ export function RetentionPage({ user }: RetentionPageProps) {
           </div>
         )}
 
-        {/* Modals */}
-        {interventionMember && (
-          <SmartInterventionModal
-            member={interventionMember}
-            onClose={() => setInterventionMember(null)}
-          />
-        )}
+        {interventionMember && <SmartInterventionModal member={interventionMember} onClose={() => setInterventionMember(null)} />}
         {warnLeader && <WarnLeaderModal leader={warnLeader} onClose={() => setWarnLeader(null)} />}
         {coachLeader && <CoachingModal leader={coachLeader} onClose={() => setCoachLeader(null)} />}
 
@@ -182,70 +162,65 @@ export function RetentionPage({ user }: RetentionPageProps) {
   )
 }
 
-function BehaviorCard({ num, label, icon, color, urgent }: { num: number, label: string, icon: string, color: 'rose' | 'amber' | 'indigo' | 'slate', urgent?: boolean }) {
-  const bgs = {
-    rose:   'bg-rose-50 border-rose-100 text-rose-600',
-    amber:  'bg-amber-50 border-amber-100 text-amber-600',
-    indigo: 'bg-blue-50 border-blue-100 text-blue-600',
-    slate:  'bg-white border-slate-200 text-slate-500',
-  }
-  const textColors = {
-    rose: 'text-rose-600', amber: 'text-amber-600',
-    indigo: 'text-blue-700', slate: 'text-slate-800'
+function StatCard({ num, label, color, urgent }: { num: number; label: string; color: 'red' | 'amber' | 'blue' | 'slate'; urgent?: boolean }) {
+  const styles = {
+    red:   { bg: 'bg-[#fff0f0] border-[#fecaca]', text: 'text-[#e53e3e]' },
+    amber: { bg: 'bg-[#fffbeb] border-[#fde68a]', text: 'text-[#d97706]' },
+    blue:  { bg: 'bg-[#eff6ff] border-[#bfdbfe]', text: 'text-[#1d4ed8]' },
+    slate: { bg: 'bg-white border-[#ebebeb]',       text: 'text-[#1a1a2e]' },
   }
   const display = useCountUp(num)
+  const s = styles[color]
 
   return (
-    <div className={`${bgs[color]} border rounded-2xl p-4 text-center relative shadow-sm hover:shadow-md transition-all`}>
-      {urgent && <div className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-rose-500 animate-urgent border-2 border-white" />}
-      <div className="text-2xl mb-1">{icon}</div>
-      <p className={`text-3xl font-black font-header block mb-1 animate-count-up ${textColors[color]}`}>{display}</p>
-      <p className="text-[11px] font-bold uppercase tracking-wide opacity-80">{label}</p>
+    <div className={`${s.bg} border rounded-[14px] p-4 text-center relative shadow-card hover:shadow-card-hover transition-all`}>
+      {urgent && <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-[#e53e3e] animate-pulse" />}
+      <p className={`text-3xl font-black font-header block mb-1 ${s.text}`}>{display}</p>
+      <p className={`text-[10px] font-bold uppercase tracking-wide ${s.text} opacity-70`}>{label}</p>
     </div>
   )
 }
+
+
 
 function UrgentMemberCard({ member, onIntervene }: { member: HRMember, onIntervene: () => void }) {
   const stuckDays = member.current_assignment?.stuck_since
     ? Math.floor((Date.now() - new Date(member.current_assignment.stuck_since).getTime()) / 86400000)
     : 0
-
   const isHigh = member.risk_level === 'high'
 
   return (
-    <div className="bg-white border-2 border-slate-200 hover:border-slate-300 hover:shadow-md transition-all duration-200 rounded-2xl p-5 shadow-sm block w-full relative overflow-hidden">
-      {isHigh && <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-rose-500" />}
-      <div className="flex flex-col md:flex-row md:items-center gap-5">
-         
-         <div className="flex items-center gap-4 flex-1">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-base font-bold shadow-sm flex-shrink-0
-              ${isHigh ? 'bg-rose-500' : 'bg-amber-500'}`}>
-              {member.user?.name?.charAt(0) ?? '?'}
-            </div>
-            <div>
-              <p className="text-base font-bold text-slate-900">{member.user?.name}</p>
-              <p className="text-xs text-slate-500 font-medium">{member.team?.name} • Phụ trách: {member.current_assignment?.leader?.name || 'Chưa rõ'}</p>
-            </div>
-         </div>
-
-         <div className="flex bg-slate-50 rounded-[16px] p-3 gap-4 border border-slate-100 flex-1 justify-center">
-            <div className="text-center">
-               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Bế tắc</p>
-               <p className={`text-lg font-bold font-header ${stuckDays >= 14 ? 'text-rose-600 animate-pulse' : 'text-slate-700'}`}>{stuckDays > 0 ? `${stuckDays} ngày` : 'Không'}</p>
-            </div>
-            <div className="w-[1px] bg-slate-200"></div>
-            <div className="text-center">
-               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Thích nghi</p>
-               <p className="text-lg font-bold font-header text-slate-700">{member.days_in_team}/90 ngày</p>
-            </div>
-         </div>
-
-         <button
-           onClick={onIntervene}
-           className="w-full md:w-auto px-6 py-3 bg-[#0f172a] text-white font-bold text-sm rounded-xl hover:bg-slate-800 transition-all shadow-md mt-2 md:mt-0 active:scale-[0.97]">
-           Can thiệp ngay
-         </button>
-
+    <div className="bg-white border border-[#ebebeb] hover:border-[#fecaca] hover:shadow-card-hover transition-all rounded-[16px] p-4 shadow-card relative overflow-hidden">
+      {isHigh && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#e53e3e] rounded-l-[16px]" />}
+      <div className="flex flex-col md:flex-row md:items-center gap-4 pl-2">
+        <div className="flex items-center gap-3 flex-1">
+          <div className={`w-10 h-10 rounded-[10px] flex items-center justify-center text-white text-sm font-bold flex-shrink-0 ${isHigh ? 'bg-[#e53e3e]' : 'bg-[#d97706]'}`}>
+            {member.user?.name?.charAt(0) ?? '?'}
+          </div>
+          <div>
+            <p className="text-[13px] font-bold text-[#1a1a2e]">{member.user?.name}</p>
+            <p className="text-[11px] text-[#94a3b8]">{member.team?.name} · {member.current_assignment?.leader?.name || 'Chưa rõ'}</p>
+          </div>
+        </div>
+        <div className="flex bg-[#f5f6fa] rounded-[10px] px-4 py-2.5 gap-5 border border-[#ebebeb] flex-shrink-0">
+          <div className="text-center">
+            <p className="text-[9px] text-[#94a3b8] font-bold uppercase tracking-wide mb-0.5">Bế tắc</p>
+            <p className={`text-[14px] font-bold font-header ${stuckDays >= 14 ? 'text-[#e53e3e] animate-pulse' : 'text-[#1a1a2e]'}`}>
+              {stuckDays > 0 ? `${stuckDays} ngày` : '—'}
+            </p>
+          </div>
+          <div className="w-px bg-[#ebebeb]" />
+          <div className="text-center">
+            <p className="text-[9px] text-[#94a3b8] font-bold uppercase tracking-wide mb-0.5">Thích nghi</p>
+            <p className="text-[14px] font-bold font-header text-[#1a1a2e]">{member.days_in_team}/90</p>
+          </div>
+        </div>
+        <button
+          onClick={onIntervene}
+          className="w-full md:w-auto px-4 py-2.5 bg-[#e53e3e] text-white font-bold text-[12px] rounded-[10px] hover:bg-[#c53030] transition-all active:scale-[0.97] flex-shrink-0"
+        >
+          Can thiệp ngay
+        </button>
       </div>
     </div>
   )
@@ -253,15 +228,15 @@ function UrgentMemberCard({ member, onIntervene }: { member: HRMember, onInterve
 
 function StableMemberCard({ member }: { member: HRMember }) {
   return (
-    <div className="bg-white border border-slate-100 rounded-[24px] p-4 flex items-center gap-3">
-       <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm font-bold border border-emerald-100">
-         {member.user?.name?.charAt(0) ?? '?'}
-       </div>
-       <div>
-         <p className="text-sm font-bold text-slate-800">{member.user?.name}</p>
-         <p className="text-xs text-slate-400 font-medium">Progress: {member.days_in_team}/90 • {member.team?.name}</p>
-       </div>
-       <div className="ml-auto text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">Tốt</div>
+    <div className="bg-white border border-[#ebebeb] rounded-[14px] p-3.5 flex items-center gap-3 shadow-card hover:shadow-card-hover transition-all">
+      <div className="w-9 h-9 rounded-[9px] bg-[#f0fdf4] text-[#059669] flex items-center justify-center text-sm font-bold flex-shrink-0">
+        {member.user?.name?.charAt(0) ?? '?'}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[13px] font-bold text-[#1a1a2e] truncate">{member.user?.name}</p>
+        <p className="text-[11px] text-[#94a3b8]">{member.days_in_team}/90 ngày · {member.team?.name}</p>
+      </div>
+      <span className="text-[10px] font-bold text-[#059669] bg-[#f0fdf4] px-2 py-1 rounded-[6px] border border-[#bbf7d0] flex-shrink-0">Tốt</span>
     </div>
   )
 }
@@ -271,90 +246,97 @@ function SimpleLeaderCard({ metrics, onWarn, onCoach }: {
   onWarn: () => void; onCoach: () => void
 }) {
   const turnoverHigh = (metrics.turnover_rate_3m ?? 0) > 20
-  
-  return (
-    <div className="bg-white border text-center border-slate-200 rounded-2xl p-5 shadow-sm">
-       <div className="w-14 h-14 bg-indigo-50 border border-indigo-100 rounded-[20px] shadow-sm flex items-center justify-center text-indigo-600 font-bold text-xl mx-auto mb-3">
-         {metrics.leader?.name?.charAt(0) ?? 'L'}
-       </div>
-       <h3 className="text-base font-bold text-slate-900">{metrics.leader?.name}</h3>
-       <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest">{metrics.team?.name} • {metrics.team_size} người</p>
-       
-       <div className="mt-4 flex gap-2 justify-center">
-         <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${turnoverHigh ? 'bg-rose-50 text-rose-700' : 'bg-slate-50 text-slate-600'}`}>
-            Rời đi: {metrics.turnover_rate_3m}%
-         </span>
-         <span className="text-xs font-bold px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700">
-            Năng lượng: {metrics.engage_score}/10
-         </span>
-       </div>
 
-       <div className="mt-5 grid grid-cols-2 gap-3">
-         <button onClick={onWarn} className="py-2.5 bg-white border-2 border-amber-100 text-amber-700 font-bold text-xs rounded-xl hover:bg-amber-50">⚠ Nhắc nhẹ</button>
-         <button onClick={onCoach} className="py-2.5 bg-indigo-600 text-white font-bold text-xs rounded-xl hover:bg-indigo-700 shadow-sm">🎯 Huấn luyện</button>
-       </div>
+  return (
+    <div className="bg-white border border-[#ebebeb] rounded-[16px] p-5 shadow-card hover:shadow-card-hover transition-all text-center">
+      <div className="w-12 h-12 bg-[#f0f0ff] rounded-[12px] flex items-center justify-center text-[#6d28d9] font-bold text-base mx-auto mb-3">
+        {metrics.leader?.name?.charAt(0) ?? 'L'}
+      </div>
+      <h3 className="text-[13px] font-bold text-[#1a1a2e]">{metrics.leader?.name}</h3>
+      <p className="text-[10px] text-[#94a3b8] font-medium uppercase tracking-wide">{metrics.team?.name} · {metrics.team_size} người</p>
+
+      <div className="mt-3 flex gap-2 justify-center flex-wrap">
+        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-[6px] ${turnoverHigh ? 'bg-[#fff0f0] text-[#e53e3e]' : 'bg-[#f5f6fa] text-[#5a6a85]'}`}>
+          Rời đi: {metrics.turnover_rate_3m}%
+        </span>
+        <span className="text-[10px] font-bold px-2.5 py-1 rounded-[6px] bg-[#f0f0ff] text-[#6d28d9]">
+          Năng lượng: {metrics.engage_score}/10
+        </span>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <button onClick={onWarn} className="py-2 border border-[#fde68a] bg-[#fffbeb] text-[#d97706] font-bold text-[11px] rounded-[10px] hover:bg-[#fef3c7] transition-all">
+          Nhắc nhẹ
+        </button>
+        <button onClick={onCoach} className="py-2 bg-[#6d28d9] text-white font-bold text-[11px] rounded-[10px] hover:bg-[#5b21b6] transition-all shadow-sm">
+          Huấn luyện
+        </button>
+      </div>
     </div>
   )
 }
 
-/* Modal Can Thiệp Thông Minh: Tập trung vào kịch bản 1 Click (Scripted Response) */
 function SmartInterventionModal({ member, onClose }: { member: HRMember; onClose: () => void }) {
   const [step, setStep] = useState<'info' | 'done'>('info')
-  const stuckDays = member.current_assignment?.stuck_since ? Math.floor((Date.now() - new Date(member.current_assignment.stuck_since).getTime()) / 86400000) : 0
+  const stuckDays = member.current_assignment?.stuck_since
+    ? Math.floor((Date.now() - new Date(member.current_assignment.stuck_since).getTime()) / 86400000)
+    : 0
 
   const handleIntervene = () => {
-    setTimeout(() => {
-       setStep('done')
-    }, 800)
+    setTimeout(() => setStep('done'), 600)
   }
 
   return (
-    <Modal isOpen title="" onClose={onClose} size="md">
-      <div className="p-0 border-b-0 max-h-[85vh] overflow-y-auto">
-         {step === 'info' ? (
-           <div className="p-6 md:p-8 space-y-6">
-              <div className="flex flex-col items-center text-center gap-3">
-                 <div className="w-16 h-16 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center text-rose-500 font-bold text-2xl">
-                   {member.user?.name?.charAt(0)}
-                 </div>
-                 <div>
-                   <h2 className="text-2xl font-bold font-header text-slate-900">{member.user?.name}</h2>
-                   <p className="text-sm font-medium text-slate-500">{member.team?.name} • Bế tắc <strong className="text-rose-600">{stuckDays} ngày</strong></p>
-                 </div>
+    <Modal isOpen title="Can thiệp" onClose={onClose} size="md">
+      <div className="max-h-[80vh] overflow-y-auto">
+        {step === 'info' ? (
+          <div className="p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-[#fff0f0] rounded-[12px] flex items-center justify-center text-[#e53e3e] font-bold text-base flex-shrink-0">
+                {member.user?.name?.charAt(0)}
               </div>
-
-              <div className="bg-slate-50 border border-slate-100 rounded-[20px] p-4 text-sm font-medium text-slate-700 italic text-center">
-                 "Máy học AI dự đoán: Nhân sự có xu hướng muốn nghỉ việc do thiếu gắn kết và phản hồi từ Trưởng nhóm."
-              </div>
-
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-3 text-center">Chọn kịch bản phù hợp nhất</p>
-                <div className="space-y-3">
-                   <button onClick={() => handleIntervene()} className="w-full text-left p-4 rounded-[20px] border border-indigo-100 bg-indigo-50 hover:bg-indigo-100 hover:border-indigo-300 transition-colors">
-                      <p className="text-sm font-bold text-indigo-900 mb-1">💬 Nhắn tin trò chuyện nhanh</p>
-                      <p className="text-xs text-indigo-700/80 font-medium">Bắt chuyện nhẹ nhàng, không tạo áp lực. Gửi kịch bản mẫu qua Chat.</p>
-                   </button>
-                   <button onClick={() => handleIntervene()} className="w-full text-left p-4 rounded-[20px] border border-amber-100 bg-amber-50 hover:bg-amber-100 hover:border-amber-300 transition-colors">
-                      <p className="text-sm font-bold text-amber-900 mb-1">📅 Đặt lịch 1-on-1 Khẩn cấp</p>
-                      <p className="text-xs text-amber-700/80 font-medium">Mời gọi thảo luận trực tiếp qua Coffee Meeting để giải tỏa nỗi lo.</p>
-                   </button>
-                </div>
+                <h2 className="text-[14px] font-bold text-[#1a1a2e] font-header">{member.user?.name}</h2>
+                <p className="text-[11px] text-[#94a3b8]">{member.team?.name} · Bế tắc <strong className="text-[#e53e3e]">{stuckDays} ngày</strong></p>
               </div>
+            </div>
 
-              <button onClick={onClose} className="w-full py-3 bg-white text-slate-500 font-bold text-sm rounded-full text-center hover:bg-slate-50 border border-slate-200">
-                Chưa làm bây giờ
+            <div className="bg-[#f5f6fa] border border-[#ebebeb] rounded-[12px] p-4">
+              <p className="text-[12px] text-[#5a6a85] italic leading-relaxed">
+                "Nhân sự có xu hướng muốn nghỉ việc do thiếu gắn kết và phản hồi từ Trưởng nhóm."
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-[0.1em]">Chọn kịch bản phù hợp</p>
+              <button onClick={handleIntervene} className="w-full text-left p-4 rounded-[12px] border border-[#bfdbfe] bg-[#eff6ff] hover:bg-[#dbeafe] transition-colors">
+                <p className="text-[13px] font-bold text-[#1d4ed8] mb-1">Nhắn tin trò chuyện nhanh</p>
+                <p className="text-[11px] text-[#1d4ed8]/70">Bắt chuyện nhẹ nhàng, không tạo áp lực.</p>
               </button>
-           </div>
-         ) : (
-           <div className="p-8 text-center space-y-4 py-12">
-              <div className="text-6xl mb-4 animate-bounce-in">👏</div>
-              <h2 className="text-2xl font-bold font-header text-slate-900">Tuyệt vời!</h2>
-              <p className="text-sm text-slate-600 font-medium">Bạn vừa làm một hành động tạo ra sự an toàn tâm lý. Cuộc trò chuyện đã được log lại vào hệ thống.</p>
-              <button onClick={onClose} className="w-full mt-4 py-4 bg-slate-900 text-white font-bold text-sm rounded-[24px] hover:bg-slate-800 shadow-md">
-                Hoàn thành
+              <button onClick={handleIntervene} className="w-full text-left p-4 rounded-[12px] border border-[#fde68a] bg-[#fffbeb] hover:bg-[#fef3c7] transition-colors">
+                <p className="text-[13px] font-bold text-[#d97706] mb-1">Đặt lịch 1-on-1 khẩn cấp</p>
+                <p className="text-[11px] text-[#d97706]/70">Mời gọi thảo luận trực tiếp qua Coffee Meeting.</p>
               </button>
-           </div>
-         )}
+            </div>
+
+            <button onClick={onClose} className="w-full py-2.5 bg-[#f5f6fa] text-[#5a6a85] font-bold text-[12px] rounded-[10px] hover:bg-[#f0f0f0] border border-[#ebebeb] transition-all">
+              Chưa làm bây giờ
+            </button>
+          </div>
+        ) : (
+          <div className="p-8 text-center space-y-4">
+            <div className="w-16 h-16 bg-[#f0fdf4] rounded-[16px] flex items-center justify-center mx-auto">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <h2 className="text-[18px] font-bold font-header text-[#1a1a2e]">Đã ghi nhận!</h2>
+            <p className="text-[13px] text-[#5a6a85]">Hành động vừa tạo ra sự an toàn tâm lý. Cuộc trò chuyện đã được log vào hệ thống.</p>
+            <button onClick={onClose} className="w-full mt-2 py-3 bg-[#e53e3e] text-white font-bold text-[13px] rounded-[12px] hover:bg-[#c53030] transition-all">
+              Hoàn thành
+            </button>
+          </div>
+        )}
       </div>
     </Modal>
   )
@@ -362,22 +344,26 @@ function SmartInterventionModal({ member, onClose }: { member: HRMember; onClose
 
 function WarnLeaderModal({ leader, onClose }: { leader: LeaderMetrics & { coaching_flag: boolean }; onClose: () => void }) {
   return (
-     <Modal isOpen title="Nhắc nhở nhẹ" onClose={onClose} size="sm">
-       <div className="p-6 text-center">
-         <p className="text-sm text-slate-600 mb-5">Xác nhận gửi thông báo nhắc nhở 1-on-1 cho <br/><strong className="text-slate-900">{leader.leader?.name}</strong>?</p>
-         <button onClick={onClose} className="w-full py-3 bg-amber-500 text-white font-bold text-sm rounded-xl">Đã gửi nhắc nhở</button>
-       </div>
-     </Modal>
+    <Modal isOpen title="Nhắc nhở nhẹ" onClose={onClose} size="sm">
+      <div className="p-5 text-center">
+        <p className="text-[13px] text-[#5a6a85] mb-5">Xác nhận gửi thông báo nhắc nhở 1-on-1 cho <br/><strong className="text-[#1a1a2e]">{leader.leader?.name}</strong>?</p>
+        <button onClick={onClose} className="w-full py-3 bg-[#d97706] text-white font-bold text-[13px] rounded-[12px] hover:bg-[#b45309] transition-all">
+          Đã gửi nhắc nhở
+        </button>
+      </div>
+    </Modal>
   )
 }
 
 function CoachingModal({ leader, onClose }: { leader: LeaderMetrics & { coaching_flag: boolean }; onClose: () => void }) {
   return (
-     <Modal isOpen title="Set lịch Coaching" onClose={onClose} size="sm">
-       <div className="p-6 text-center">
-         <p className="text-sm text-slate-600 mb-5">Team của <strong className="text-slate-900">{leader.leader?.name}</strong> đang có tỷ lệ nghỉ việc cao. Tạo request Coaching?</p>
-         <button onClick={onClose} className="w-full py-3 bg-indigo-600 text-white font-bold text-sm rounded-xl mb-3">Tạo lịch hẹn</button>
-       </div>
-     </Modal>
+    <Modal isOpen title="Yêu cầu Coaching" onClose={onClose} size="sm">
+      <div className="p-5 text-center">
+        <p className="text-[13px] text-[#5a6a85] mb-5">Team của <strong className="text-[#1a1a2e]">{leader.leader?.name}</strong> đang có tỷ lệ nghỉ việc cao. Tạo request Coaching?</p>
+        <button onClick={onClose} className="w-full py-3 bg-[#6d28d9] text-white font-bold text-[13px] rounded-[12px] hover:bg-[#5b21b6] transition-all">
+          Tạo lịch hẹn
+        </button>
+      </div>
+    </Modal>
   )
 }

@@ -1,100 +1,68 @@
 import {
-  Chart as ChartJS,
-  RadialLinearScale,
-  PointElement,
-  LineElement,
-  Filler,
+  RadarChart as ReRadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  Radar,
+  ResponsiveContainer,
   Tooltip,
-  Legend,
-  type ChartOptions
-} from 'chart.js';
-import { Radar } from 'react-chartjs-2';
-
-ChartJS.register(
-  RadialLinearScale,
-  PointElement,
-  LineElement,
-  Filler,
-  Tooltip,
-  Legend
-);
+} from 'recharts'
 
 interface RadarChartProps {
-  labels: string[];
-  data: number[];
-  label?: string;
-  color?: string;
-  max?: number;
+  labels: string[]
+  data: number[]
+  label?: string
+  color?: string
+  max?: number
 }
 
-export function RadarChart({ 
-  labels, 
-  data, 
-  label = 'Chỉ số', 
-  color = '#3b82f6', 
-  max = 10 
-}: RadarChartProps) {
-  const chartData = {
-    labels,
-    datasets: [
-      {
-        label,
-        data,
-        backgroundColor: `${color}33`, // 20% opacity
-        borderColor: color,
-        borderWidth: 2,
-        pointBackgroundColor: color,
-        pointBorderColor: '#fff',
-        pointHoverBackgroundColor: '#fff',
-        pointHoverBorderColor: color,
-      },
-    ],
-  };
-
-  const options: ChartOptions<'radar'> = {
-    scales: {
-      r: {
-        angleLines: {
-          display: true,
-          color: '#f1f5f9',
-        },
-        grid: {
-          color: '#f1f5f9',
-        },
-        suggestedMin: 0,
-        suggestedMax: max,
-        ticks: {
-          display: false,
-          stepSize: max / 5,
-        },
-        pointLabels: {
-          font: {
-            size: 10,
-            family: "'Manrope', sans-serif",
-            weight: 'bold',
-          },
-          color: '#64748b',
-        },
-      },
-    },
-    plugins: {
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        backgroundColor: '#1e293b',
-        titleFont: { size: 12, family: "'Manrope', sans-serif" },
-        bodyFont: { size: 12, family: "'Manrope', sans-serif" },
-        padding: 10,
-        cornerRadius: 8,
-      },
-    },
-    maintainAspectRatio: false,
-  };
+export function RadarChart({ labels, data, label = 'Chỉ số', color = '#e53e3e', max = 10 }: RadarChartProps) {
+  const chartData = labels.map((name, i) => ({
+    subject: name,
+    value: data[i] ?? 0,
+    fullMark: max,
+  }))
 
   return (
-    <div className="w-full h-full min-h-[250px]">
-      <Radar data={chartData} options={options} />
-    </div>
-  );
+    <ResponsiveContainer width="100%" height="100%" minHeight={240}>
+      <ReRadarChart cx="50%" cy="50%" outerRadius="70%" data={chartData}>
+        <PolarGrid
+          stroke="#f0f0f0"
+          strokeWidth={1}
+        />
+        <PolarAngleAxis
+          dataKey="subject"
+          tick={{
+            fill: '#5a6a85',
+            fontSize: 11,
+            fontFamily: 'Manrope, sans-serif',
+            fontWeight: 600,
+          }}
+        />
+        <Radar
+          name={label}
+          dataKey="value"
+          stroke={color}
+          fill={color}
+          fillOpacity={0.12}
+          strokeWidth={2}
+          dot={{ r: 3, fill: color, strokeWidth: 0 }}
+          activeDot={{ r: 4, fill: color, strokeWidth: 2, stroke: '#fff' }}
+          isAnimationActive={false}
+        />
+        <Tooltip
+          formatter={(v: any) => [`${v} / ${max}`, label]}
+          contentStyle={{
+            background: '#1a1a2e',
+            border: 'none',
+            borderRadius: 8,
+            fontSize: 12,
+            color: '#fff',
+            fontFamily: 'Manrope, sans-serif',
+          }}
+          itemStyle={{ color: '#fff' }}
+          labelStyle={{ color: '#94a3b8', fontSize: 11 }}
+        />
+      </ReRadarChart>
+    </ResponsiveContainer>
+  )
 }
