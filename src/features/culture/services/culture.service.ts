@@ -1,9 +1,6 @@
 import apiClient from '../../../shared/lib/api-client'
 import type {
-  Challenge, CultureStory, OrgStructure, BehaviorScores,
-  JourneyMilestoneRecord, TeamHealth, TeamAnalysis,
-  ExperienceType, CourageLevel, SupportType,
-  ApiSuccess, ApiCursorPaginated,
+  Challenge, CultureStory, OrgStructure, TeamHealth, TeamAnalysis
 } from '../../../shared/types'
 
 const BASE = '/api/hr/culture'

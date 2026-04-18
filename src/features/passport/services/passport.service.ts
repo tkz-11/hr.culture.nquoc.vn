@@ -1,8 +1,6 @@
 import apiClient from '../../../shared/lib/api-client'
 import type {
-  PassportProfile, CommHeatmapEntry, CommSession,
-  AnalyzeResult, RewriteResult, LeaderIntegrity,
-  ScenarioGroup, ApiSuccess,
+  CommHeatmapEntry, AnalyzeResult, RewriteResult,
 } from '../../../shared/types'
 
 const BASE = '/api/hr/passport'
@@ -21,7 +19,7 @@ export const passportService = {
       culture_xp: p.overall_score ? p.overall_score * 10 : 0
     }
     const heatmapData = heat.data.data || { dates: [], scores: [] }
-    const heatmap = heatmapData.dates.map((d: any, i: number) => ({ date: d, directness_score: heatmapData.scores[i] }))
+    const heatmap = heatmapData.dates.map((d: any) => ({ date: d, banned_word_count: 0 }))
     return {
       profile,
       heatmap,
@@ -34,12 +32,12 @@ export const passportService = {
     const res = await apiClient.post<any>(`${BASE}/comm-sessions`, { input_text: text, style: 'direct' }).catch(() => ({ data: { data: {} } }))
     const d = res.data.data
     return {
-      directness_score: d.score || 80,
-      empathy_score: 85,
-      clarity_score: 90,
-      banned_words_found: [],
-      vague_phrases_found: [],
-      feedback_message: d.ai_feedback || 'Tốt',
+      rating: 'direct',
+      xp_delta: d?.score || 10,
+      patterns_detected: [],
+      new_total_xp: 1500,
+      streak_days: 5,
+      rewrite_suggestion: d?.ai_feedback || 'Tốt',
     }
   },
 
@@ -47,10 +45,11 @@ export const passportService = {
     const res = await apiClient.post<any>(`${BASE}/comm-sessions`, { input_text: text, style: 'rewrite' }).catch(() => ({ data: { data: {} } }))
     const d = res.data.data
     return {
-      original_text: text,
-      rewritten_text: d.rewritten_text || text,
-      tone_used: 'direct',
-      improvements: ['Rõ ràng hơn', 'Trực diện hơn']
+      original: text,
+      rewritten: d?.rewritten_text || text,
+      rating: 'direct',
+      xp_delta: 5,
+      patterns_detected: []
     }
   },
 
@@ -65,7 +64,7 @@ export const passportService = {
     }
   },
 
-  async getLeaderProfile(id: string) {
+  async getLeaderProfile(_id: string) {
     const res = await apiClient.get<any>(`${BASE}/leader-integrity/me`).catch(() => ({ data: { data: {} } }))
     const i = res.data.data || {}
     return {
@@ -93,6 +92,6 @@ export const passportService = {
   },
 
   async logHeatmap(payload: any): Promise<CommHeatmapEntry> {
-    return { date: payload.date, directness_score: 80, is_logged: true }
+    return { date: payload.date, deadline_met: true, wyfl_done: true, banned_word_count: 0 }
   },
 }

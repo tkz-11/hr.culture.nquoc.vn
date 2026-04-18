@@ -229,7 +229,7 @@ function KnowledgeBase({ user }: { user?: AuthUser }) {
     cultureService.getLessons().then(setStories)
   }, [])
 
-  const canSeeAll = user?.role === 'hr_manager' || user?.role === 'leader'
+  const canSeeAll = user?.primary_role === 'hr_manager' || user?.primary_role === 'leader'
   const visible = stories.filter(s => canSeeAll || s.is_public)
   const filtered = visible.filter(s => {
     const matchSearch = !search || s.content.toLowerCase().includes(search.toLowerCase())
@@ -303,7 +303,7 @@ function KnowledgeBase({ user }: { user?: AuthUser }) {
               </div>
               <p className="text-[13px] text-[#1a1a2e] leading-relaxed line-clamp-3">{story.content}</p>
               {story.user?.name && (
-                <p className="text-[11px] text-[#94a3b8] mt-2">{story.user.full_name} · {new Date(story.created_at).toLocaleDateString('vi-VN')}</p>
+                <p className="text-[11px] text-[#94a3b8] mt-2">{story.user.name} · {new Date(story.created_at).toLocaleDateString('vi-VN')}</p>
               )}
             </div>
           ))}

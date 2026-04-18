@@ -1,8 +1,7 @@
 import apiClient from '../../../shared/lib/api-client'
 import type {
   RetentionDashboard, HRMember, LeaderAssignment, Intervention,
-  LeaderMetrics, CoachingRequest, RiskLevel, AssignmentStatus,
-  CoachingType, CoachingStatus, ApiResponse, ApiSuccess,
+  LeaderMetrics, CoachingRequest,
 } from '../../../shared/types'
 
 const BASE = '/api/hr/retention'
@@ -44,19 +43,19 @@ export const retentionService = {
     return res.data.data 
   },
 
-  async updateRisk(memberId: string, payload: any) {
+  async updateRisk(_memberId: string, _payload: any) {
     return {}
   },
 
-  async getAssignments(params?: any): Promise<LeaderAssignment[]> {
+  async getAssignments(_params?: any): Promise<LeaderAssignment[]> {
     return []
   },
 
-  async createAssignment(payload: any): Promise<LeaderAssignment> {
+  async createAssignment(_payload: any): Promise<LeaderAssignment> {
     return {} as any
   },
 
-  async updateAssignment(id: string, payload: any): Promise<LeaderAssignment> {
+  async updateAssignment(_id: string, _payload: any): Promise<LeaderAssignment> {
     return {} as any
   },
 
@@ -67,15 +66,15 @@ export const retentionService = {
     return res.data.data || {}
   },
 
-  async getInterventions(member_id?: string): Promise<Intervention[]> {
+  async getInterventions(_member_id?: string): Promise<Intervention[]> {
     return []
   },
 
-  async createCoachingRequest(payload: any): Promise<CoachingRequest> {
+  async createCoachingRequest(_payload: any): Promise<CoachingRequest> {
     return {} as any
   },
 
-  async updateCoachingRequest(id: string, payload: any): Promise<CoachingRequest> {
+  async updateCoachingRequest(_id: string, _payload: any): Promise<CoachingRequest> {
     return {} as any
   },
 

@@ -37,7 +37,7 @@ const SuspenseFallback = () => (
 
 function AppShell() {
   const { user, loading, initialize, switchRole } = useAuthStore()
-  const { toasts, addToast, removeToast } = useToast()
+  const { addToast } = useToast()
 
   React.useEffect(() => {
     initialize()
@@ -90,7 +90,6 @@ function AppShell() {
 }
 
 export default function App() {
-  const { toasts, removeToast } = useToast()
 
   return (
     <QueryClientProvider client={queryClient}>
