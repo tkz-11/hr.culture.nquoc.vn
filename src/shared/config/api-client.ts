@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 
 const BASE_URL = import.meta.env.VITE_API_URL as string
+const IS_MOCK = import.meta.env.VITE_ENABLE_MOCKING === 'true'
 
 export class ApiError extends Error {
   public status: number;
@@ -22,11 +23,18 @@ export class ApiError extends Error {
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T | undefined> {
-  const { data: { session } } = await supabase.auth.getSession()
-  const token = session?.access_token
-
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  if (token) headers['Authorization'] = `Bearer ${token}`
+
+  // In mock mode, skip supabase token (MSW doesn't need it)
+  if (!IS_MOCK) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      if (token) headers['Authorization'] = `Bearer ${token}`
+    } catch {
+      // supabase unavailable, continue without token
+    }
+  }
 
   const res = await fetch(`${BASE_URL}${path}`, {
     method,

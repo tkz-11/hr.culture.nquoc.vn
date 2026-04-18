@@ -1,14 +1,8 @@
 // src/mocks/config.ts
-import { supabase } from '@shared/config/supabase'
 import { MOCK_PERSONS, type MockPerson } from './data/persons'
 import { HttpResponse } from 'msw'
 
-export async function getCurrentMockUserId(): Promise<string | null> {
-  const { data: { session } } = await supabase.auth.getSession()
-  if (session?.user?.email) {
-    return MOCK_PERSONS.find(p => p.email === session.user!.email)?.id ?? null
-  }
-  // Dev mode fallback: read role from localStorage (DevModeLogin)
+export function getCurrentMockUserId(): string | null {
   try {
     const devRole = localStorage.getItem('nquoc-dev-role') || 'member'
     const person = MOCK_PERSONS.find(p => p.primary_role === devRole)
@@ -18,8 +12,8 @@ export async function getCurrentMockUserId(): Promise<string | null> {
   }
 }
 
-export async function getCurrentMockPerson(): Promise<MockPerson | null> {
-  const id = await getCurrentMockUserId()
+export function getCurrentMockPerson(): MockPerson | null {
+  const id = getCurrentMockUserId()
   return id ? MOCK_PERSONS.find(p => p.id === id) ?? null : null
 }
 

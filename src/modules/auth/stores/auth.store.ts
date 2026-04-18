@@ -18,35 +18,43 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   initialize: async () => {
     set({ loading: true })
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
+    const isMock = import.meta.env.VITE_ENABLE_MOCKING === 'true'
 
-      if (!session && import.meta.env.VITE_ENABLE_MOCKING !== 'true') {
-        set({ user: null, loading: false })
-        return
+    try {
+      // In mock mode, skip supabase session check entirely
+      if (!isMock) {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+          set({ user: null, loading: false })
+          return
+        }
       }
 
       // In mock mode, /api/auth/me is intercepted by MSW using localStorage role
       const user = await authApi.getMe()
       set({ user: user ?? null, loading: false })
-    } catch {
+    } catch (e) {
+      console.warn('[auth] initialize failed:', e)
       set({ user: null, loading: false })
     }
 
-    supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_OUT' || !session) {
-        set({ user: null })
-        return
-      }
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        try {
-          const user = await authApi.getMe()
-          set({ user: user ?? null })
-        } catch {
+    // Only set up auth listener in non-mock mode
+    if (!isMock) {
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_OUT' || !session) {
           set({ user: null })
+          return
         }
-      }
-    })
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          try {
+            const user = await authApi.getMe()
+            set({ user: user ?? null })
+          } catch {
+            set({ user: null })
+          }
+        }
+      })
+    }
   },
 
   loginWithGoogle: async () => {

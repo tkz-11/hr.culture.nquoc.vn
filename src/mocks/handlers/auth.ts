@@ -3,8 +3,8 @@ import { http, HttpResponse } from 'msw'
 import { getCurrentMockPerson, unauthorized } from '../config'
 
 export const authHandlers = [
-  http.get('*/api/auth/me', async () => {
-    const person = await getCurrentMockPerson()
+  http.get('*/api/auth/me', () => {
+    const person = getCurrentMockPerson()
     if (!person) return unauthorized()
     return HttpResponse.json({
       data: {
