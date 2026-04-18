@@ -29,7 +29,7 @@ export function RetentionPage({ user }: RetentionPageProps) {
         ])
         setDashboard(dash)
         setMembers(mems)
-        if (user.role === 'hr_manager') {
+        if (user.primary_role === 'hr_manager') {
           const metrics = await retentionService.getLeaderMetrics()
           setLeaderMetrics(metrics)
         }
@@ -38,7 +38,7 @@ export function RetentionPage({ user }: RetentionPageProps) {
       }
     }
     load()
-  }, [user.role])
+  }, [user.primary_role])
 
   if (loading) return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
@@ -135,7 +135,7 @@ export function RetentionPage({ user }: RetentionPageProps) {
         </div>
 
         {/* Leader matrix (HR only) */}
-        {user.role === 'hr_manager' && leaderMetrics.length > 0 && (
+        {user.primary_role === 'hr_manager' && leaderMetrics.length > 0 && (
           <div className="space-y-3">
             <h2 className="text-[13px] font-bold text-[#1a1a2e] flex items-center gap-2 border-b border-[#f0f0f0] pb-3">
               <span className="w-2 h-2 rounded-full bg-[#6d28d9]" /> Phân tích Leader

@@ -167,13 +167,13 @@ export function Sidebar({ user }: SidebarProps) {
         <div className="flex items-center gap-3 px-2 py-2">
           <div
             className="w-9 h-9 rounded-[9px] flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-            style={{ background: user.role === 'hr_manager' ? '#e53e3e' : user.role === 'leader' ? '#6d28d9' : '#1a1a2e' }}
+            style={{ background: user.primary_role === 'hr_manager' ? '#e53e3e' : user.primary_role === 'leader' ? '#6d28d9' : '#1a1a2e' }}
           >
-            {user.name.charAt(0).toUpperCase()}
+            {user.full_name.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-bold text-[#1a1a2e] truncate leading-tight">{user.name}</p>
-            <p className="text-[11px] text-[#94a3b8] font-medium">{roleLabels[user.role] ?? user.role}</p>
+            <p className="text-[13px] font-bold text-[#1a1a2e] truncate leading-tight">{user.full_name}</p>
+            <p className="text-[11px] text-[#94a3b8] font-medium">{roleLabels[user.primary_role] ?? user.primary_role}</p>
           </div>
           <div className="w-2 h-2 rounded-full bg-[#10b981] flex-shrink-0" />
         </div>

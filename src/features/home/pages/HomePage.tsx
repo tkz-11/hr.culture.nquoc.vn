@@ -227,9 +227,9 @@ export function HomePage({ user }: HomePageProps) {
         <div className="absolute top-0 right-0 w-24 h-24 bg-[#fff0f0] rounded-full -translate-y-8 translate-x-8" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div>
-            <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-[0.12em] mb-1">{greeting}, {roleLabel[user.role]}</p>
+            <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-[0.12em] mb-1">{greeting}, {roleLabel[user.primary_role]}</p>
             <h1 className="text-xl font-black text-[#1a1a2e] font-header leading-tight tracking-tight">
-              {user.name}
+              {user.full_name}
             </h1>
             {identityConfig && (
               <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-[8px] mt-2 border text-[11px] font-bold ${identityConfig.color}`}>
@@ -325,7 +325,7 @@ export function HomePage({ user }: HomePageProps) {
 
         <div className="space-y-4">
           {/* Retention alerts */}
-          {(user.role === 'hr_manager' || user.role === 'leader') && MOCK_RETENTION.top_risks.length > 0 && (
+          {(user.primary_role === 'hr_manager' || user.primary_role === 'leader') && MOCK_RETENTION.top_risks.length > 0 && (
             <div className="bg-white border border-[#ebebeb] rounded-[16px] overflow-hidden shadow-card">
               <div className="px-4 py-3 border-b border-[#f0f0f0] flex justify-between items-center">
                 <h3 className="text-[12px] font-bold text-[#e53e3e] flex items-center gap-2">

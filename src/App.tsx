@@ -1,150 +1,108 @@
 import React from 'react'
-import { BrowserRouter } from 'react-router-dom'
-import { useAuth } from './shared/hooks/useAuth'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClient } from '@shared/config/query-client'
+import { useAuthStore } from '@modules/auth/stores/auth.store'
 import { useToast } from './shared/hooks/useToast'
 import { Sidebar } from './shared/components/Sidebar'
 import { TopBar } from './shared/components/TopBar'
 import { ToastContainer } from './shared/components/Toast'
 import { PageLoading } from './shared/components/LoadingSpinner'
 import { NBotCoach } from './shared/components/NBotCoach'
-import { AppRoutes } from './routes'
-import type { AuthUser } from './shared/types'
+import { AuthPage } from '@modules/auth/pages/AuthPage'
+import { AuthCallbackPage } from '@modules/auth/pages/AuthCallbackPage'
+import type { UserRole } from './shared/types'
 
-function getMockUser(): AuthUser | null {
-  const stored = localStorage.getItem('nquoc-dev-user')
-  if (!stored) return null
-  try { return JSON.parse(stored) as AuthUser } catch { return null }
-}
+const HomePage = React.lazy(() =>
+  import('./features/home/pages/HomePage').then((m) => ({ default: m.HomePage }))
+)
+const RetentionPage = React.lazy(() =>
+  import('./features/retention/pages/RetentionPage').then((m) => ({ default: m.RetentionPage }))
+)
+const PassportPage = React.lazy(() =>
+  import('./features/passport/pages/PassportPage').then((m) => ({ default: m.PassportPage }))
+)
+const CulturePage = React.lazy(() =>
+  import('./features/culture/pages/CulturePage').then((m) => ({ default: m.CulturePage }))
+)
 
-export default function App() {
-  const { user: supabaseUser, loading, switchRole: supabaseSwitchRole } = useAuth()
+const SuspenseFallback = () => (
+  <div className="flex-1 flex items-center justify-center">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-10 h-10 border-[3px] border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
+      <p className="text-sm text-nquoc-muted font-medium">Đang tải...</p>
+    </div>
+  </div>
+)
+
+function AppShell() {
+  const { user, loading, initialize, switchRole } = useAuthStore()
   const { toasts, addToast, removeToast } = useToast()
-  const isVercelPreview = window.location.hostname.includes('vercel.app')
-  const isDemoMode = new URLSearchParams(window.location.search).has('demo')
-  const isDemoEnv = import.meta.env.DEV || isVercelPreview || isDemoMode
 
-  // Unified active user state — works for both mock and real auth
-  const [activeUser, setActiveUser] = React.useState<AuthUser | null>(() => {
-    return supabaseUser ?? (isDemoEnv ? getMockUser() : null)
-  })
-
-  // Sync when supabase auth resolves
   React.useEffect(() => {
-    if (supabaseUser) setActiveUser(supabaseUser)
-  }, [supabaseUser])
+    initialize()
+  }, [initialize])
 
-  // Role switcher — works for BOTH mock and real auth
-  const switchRole = (role: import('./shared/types').UserRole) => {
-    localStorage.setItem('nquoc-dev-role', role)
-    if (isDemoEnv) {
-      // Update mock user in localStorage
-      const current = getMockUser()
-      if (current) {
-        const updated = { ...current, role }
-        localStorage.setItem('nquoc-dev-user', JSON.stringify(updated))
-        setActiveUser(updated)
-      }
-    }
-    // Also try supabase switchRole if real user
-    supabaseSwitchRole(role)
-    if (activeUser && !supabaseUser) {
-      setActiveUser(u => u ? { ...u, role } : u)
-    }
-  }
-
-  // Expose addToast globally
   React.useEffect(() => {
     ;(window as unknown as Record<string, unknown>).__addToast = addToast
   }, [addToast])
 
-  if (loading && !activeUser) return <PageLoading />
-
-  if (!activeUser) {
-    if (isDemoEnv) return <DevModeLogin />
-    window.location.href = 'https://nquoc.vn/login'
-    return null
-  }
+  if (loading) return <PageLoading />
 
   return (
-    <BrowserRouter>
-      <div className="flex min-h-screen bg-nquoc-bg">
-        <Sidebar user={activeUser} />
-        <div className="flex-1 flex flex-col min-w-0">
-          <TopBar user={activeUser} onSwitchRole={switchRole} />
-          <main className="flex-1 overflow-auto">
-            <AppRoutes user={activeUser} />
-          </main>
-        </div>
-      </div>
-      <NBotCoach user={activeUser} />
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
-    </BrowserRouter>
+    <Routes>
+      <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
+      <Route path="/auth-callback" element={<AuthCallbackPage />} />
+
+      {/* Protected routes */}
+      {user ? (
+        <Route
+          path="/*"
+          element={
+            <div className="flex min-h-screen bg-nquoc-bg">
+              <Sidebar user={user} />
+              <div className="flex-1 flex flex-col min-w-0">
+                <TopBar
+                  user={user}
+                  onSwitchRole={(role: UserRole) => switchRole(role)}
+                />
+                <main className="flex-1 overflow-auto">
+                  <React.Suspense fallback={<SuspenseFallback />}>
+                    <Routes>
+                      <Route path="/" element={<HomePage user={user} />} />
+                      <Route path="/retention" element={<RetentionPage user={user} />} />
+                      <Route path="/passport" element={<PassportPage user={user} />} />
+                      <Route path="/culture" element={<CulturePage user={user} />} />
+                      <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                  </React.Suspense>
+                </main>
+              </div>
+              <NBotCoach user={user} />
+            </div>
+          }
+        />
+      ) : (
+        <Route path="*" element={<Navigate to="/auth" replace />} />
+      )}
+    </Routes>
   )
 }
 
-function DevModeLogin() {
-  const handleLogin = (role: 'hr_manager' | 'leader' | 'member') => {
-    localStorage.setItem('nquoc-dev-role', role)
-    localStorage.setItem(
-      'nquoc-dev-user',
-      JSON.stringify({
-        id: 'dev-user-id',
-        email: `${role}@nquoc.vn`,
-        name:
-          role === 'hr_manager'
-            ? 'Nguyễn HR Manager'
-            : role === 'leader'
-            ? 'Trần Thị Leader'
-            : 'Lê Văn Thành Viên',
-        role,
-      })
-    )
-    window.location.reload()
-  }
+export default function App() {
+  const { toasts, removeToast } = useToast()
 
   return (
-    <div className="min-h-screen bg-nquoc-bg flex items-center justify-center p-6">
-      <div className="bg-white rounded-[32px] shadow-xl p-10 w-full max-w-sm border border-nquoc-border transition-all duration-300 hover:shadow-2xl">
-        <div className="text-center mb-10">
-          <div className="w-16 h-16 bg-nquoc-blue rounded-3xl flex items-center justify-center text-white font-bold text-2xl font-header mx-auto mb-4 shadow-lg shadow-blue-100">
-            N
-          </div>
-          <h1 className="text-2xl font-bold text-nquoc-text font-header tracking-tight">NhiLe HR Culture</h1>
-          <p className="text-sm text-nquoc-muted mt-2 leading-relaxed">
-            Thấu hiểu đội ngũ, kiến tạo nội lực.<br/>
-            <span className="text-[10px] font-medium uppercase tracking-widest text-slate-400 mt-2 inline-block">Demo Mode</span>
-          </p>
-        </div>
-
-        <div className="space-y-3">
-          <p className="text-[10px] font-bold text-nquoc-muted uppercase tracking-wider mb-2 px-1">Chọn vai trò để bắt đầu</p>
-          <button
-            onClick={() => handleLogin('hr_manager')}
-            className="w-full group py-3.5 px-5 bg-red-50 text-red-700 border border-red-100 rounded-2xl text-sm font-semibold hover:bg-red-100 hover:border-red-200 transition-all duration-200 flex items-center justify-between"
-          >
-            <span>HR Manager</span>
-            <span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-          </button>
-          <button
-            onClick={() => handleLogin('leader')}
-            className="w-full group py-3.5 px-5 bg-blue-50 text-blue-700 border border-blue-100 rounded-2xl text-sm font-semibold hover:bg-blue-100 hover:border-blue-200 transition-all duration-200 flex items-center justify-between"
-          >
-            <span>Team Leader</span>
-            <span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-          </button>
-          <button
-            onClick={() => handleLogin('member')}
-            className="w-full group py-3.5 px-5 bg-slate-50 text-slate-700 border border-slate-100 rounded-2xl text-sm font-semibold hover:bg-slate-100 hover:border-slate-200 transition-all duration-200 flex items-center justify-between"
-          >
-            <span>Thành viên</span>
-            <span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-          </button>
-        </div>
-
-        <p className="text-center text-[10px] text-nquoc-muted mt-8 italic">
-          Giao diện demo tối ưu cho trải nghiệm người dùng Millennial & Gen Z.
-        </p>
-      </div>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AppShell />
+        <ToastContainerWrapper />
+      </BrowserRouter>
+    </QueryClientProvider>
   )
+}
+
+function ToastContainerWrapper() {
+  const { toasts, removeToast } = useToast()
+  return <ToastContainer toasts={toasts} onRemove={removeToast} />
 }

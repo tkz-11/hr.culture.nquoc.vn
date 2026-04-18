@@ -204,7 +204,7 @@ const highlightClass: Record<PatternGroup, string> = {
 
 export function PassportPage({ user }: PassportPageProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('member')
-  const visibleTabs = tabs.filter((t) => !t.roles || t.roles.includes(user.role))
+  const visibleTabs = tabs.filter((t) => !t.roles || t.roles.includes(user.primary_role))
 
   return (
     <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
@@ -369,8 +369,8 @@ function LeaderDashboard({ user }: { user: AuthUser }) {
   const [leaderData, setLeaderData] = useState<{ integrity: LeaderIntegrity; improvement_suggestions: string[] } | null>(null)
 
   useEffect(() => {
-    passportService.getLeaderProfile(user.id).then(setLeaderData)
-  }, [user.id])
+    passportService.getLeaderProfile(user.person_id).then(setLeaderData)
+  }, [user.person_id])
 
   const scoreRaw = Math.round((leaderData?.integrity.integrity_score ?? 0) * 100)
   const score = useCountUp(scoreRaw)

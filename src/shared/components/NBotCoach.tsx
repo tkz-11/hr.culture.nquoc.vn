@@ -67,7 +67,7 @@ export function NBotCoach({ user }: NBotCoachProps) {
   const [pulse, setPulse] = useState(true)
 
   // Only show for leader/hr
-  if (user.role === 'member') return null
+  if (user.primary_role === 'member') return null
 
   const messages = CONTEXT_MESSAGES[location.pathname] ?? CONTEXT_MESSAGES['/']
   const current = messages[msgIndex % messages.length]

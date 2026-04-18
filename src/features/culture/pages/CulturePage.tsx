@@ -25,7 +25,7 @@ const tabs: { key: TabKey; label: string; roles?: string[] }[] = [
 export function CulturePage({ user }: CulturePageProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('home')
   const [showShareModal, setShowShareModal] = useState(false)
-  const visibleTabs = tabs.filter((t) => !t.roles || t.roles.includes(user.role))
+  const visibleTabs = tabs.filter((t) => !t.roles || t.roles.includes(user.primary_role))
 
   return (
     <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
@@ -303,7 +303,7 @@ function KnowledgeBase({ user }: { user?: AuthUser }) {
               </div>
               <p className="text-[13px] text-[#1a1a2e] leading-relaxed line-clamp-3">{story.content}</p>
               {story.user?.name && (
-                <p className="text-[11px] text-[#94a3b8] mt-2">{story.user.name} · {new Date(story.created_at).toLocaleDateString('vi-VN')}</p>
+                <p className="text-[11px] text-[#94a3b8] mt-2">{story.user.full_name} · {new Date(story.created_at).toLocaleDateString('vi-VN')}</p>
               )}
             </div>
           ))}

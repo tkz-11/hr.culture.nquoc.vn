@@ -1,4 +1,5 @@
-import type { AuthUser, UserRole } from '../types'
+import type { AuthUser } from '../types'
+type UserRole = AuthUser['primary_role']
 import { Badge } from './Badge'
 
 interface TopBarProps {
@@ -49,10 +50,10 @@ export function TopBar({ user, onSwitchRole }: TopBarProps) {
       {/* Left: Greeting */}
       <div>
         <p className="text-[10px] font-bold text-[#94a3b8] uppercase tracking-wider leading-none">
-          {getGreeting()}, {roleLabels[user.role]}
+          {getGreeting()}, {roleLabels[user.primary_role]}
         </p>
         <p className="text-[13px] font-bold text-[#1a1a2e] font-header leading-tight mt-0.5">
-          {user.name}
+          {user.full_name}
         </p>
       </div>
 
@@ -69,7 +70,7 @@ export function TopBar({ user, onSwitchRole }: TopBarProps) {
                 id={`switch-role-${role}`}
                 onClick={() => onSwitchRole(role)}
                 className={`text-[10px] px-2 py-1 rounded-[7px] font-bold transition-all ${
-                  user.role === role
+                  user.primary_role === role
                     ? 'bg-amber-500 text-white shadow-sm'
                     : 'text-amber-600 hover:bg-amber-100'
                 }`}
@@ -94,14 +95,14 @@ export function TopBar({ user, onSwitchRole }: TopBarProps) {
 
         {/* Role badge + Avatar */}
         <div className="flex items-center gap-2">
-          <Badge variant={roleBadgeVariant[user.role]} size="sm">
-            {roleLabels[user.role]}
+          <Badge variant={roleBadgeVariant[user.primary_role]} size="sm">
+            {roleLabels[user.primary_role]}
           </Badge>
           <div
             className="w-9 h-9 rounded-[10px] flex items-center justify-center text-white font-bold text-sm"
-            style={{ background: roleAvatarColor[user.role] }}
+            style={{ background: roleAvatarColor[user.primary_role] }}
           >
-            {user.name.charAt(0).toUpperCase()}
+            {user.full_name.charAt(0).toUpperCase()}
           </div>
         </div>
 

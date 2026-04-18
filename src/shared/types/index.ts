@@ -28,12 +28,16 @@ export type JourneyMilestone = '1m' | '3m' | '6m' | '1y' | 'out';
 
 // ── Auth ──
 export interface AuthUser {
-  id: string;
+  person_id: string;
   email: string;
-  name: string;
+  full_name: string;
   avatar_url?: string;
-  role: UserRole;
+  roles: UserRole[];
+  primary_role: UserRole;
 }
+
+/** @deprecated use primary_role */
+export type { UserRole as Role }
 
 // ── Module 1 · HR Retention Radar ──
 export interface HRMember {
