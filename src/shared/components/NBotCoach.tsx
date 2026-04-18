@@ -66,21 +66,22 @@ export function NBotCoach({ user }: NBotCoachProps) {
   const [msgIndex, setMsgIndex] = useState(0)
   const [pulse, setPulse] = useState(true)
 
-  // Only show for leader/hr
-  if (user.primary_role === 'member') return null
-
+  const isMember = user.primary_role === 'member'
   const messages = CONTEXT_MESSAGES[location.pathname] ?? CONTEXT_MESSAGES['/']
   const current = messages[msgIndex % messages.length]
 
   // Pulse every 10s to attract attention
   useEffect(() => {
-    if (open) return
+    if (open || isMember) return
     const interval = setInterval(() => {
       setPulse(true)
       setTimeout(() => setPulse(false), 2000)
     }, 10000)
     return () => clearInterval(interval)
-  }, [open])
+  }, [open, isMember])
+
+  // Don't render for member role (but hooks are already called above)
+  if (isMember) return null
 
   const typeConfig = {
     info:    { bg: 'bg-indigo-500', icon: 'ℹ️', border: 'border-indigo-200', headerBg: 'bg-indigo-50 text-indigo-700' },
