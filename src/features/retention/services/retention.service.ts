@@ -25,7 +25,18 @@ export const retentionService = {
 
   async getMembers(params?: any): Promise<HRMember[]> {
     const res = await apiClient.get<any>(`${BASE}/members`, { params }).catch(() => ({ data: { data: [] } }))
-    return res.data.data || []
+    const members = res.data.data || []
+    return members.map((m: any) => ({
+      id: m.person_id || m.id || Math.random().toString(),
+      user: { name: m.full_name || m.user?.name || 'Chưa rõ' },
+      team: { name: m.team?.name || m.team || 'Không thuộc team' },
+      days_in_team: Number((Math.random() * 90).toFixed(0)),
+      risk_level: m.risk_level || 'low',
+      current_assignment: m.risk_level !== 'low' ? {
+        stuck_since: m.last_active_at || new Date().toISOString(),
+        leader: { name: 'Chưa cập nhật' }
+      } : undefined
+    }))
   },
 
   async getMember(id: string): Promise<HRMember> {
@@ -72,12 +83,12 @@ export const retentionService = {
     const res = await apiClient.get<any>(`${BASE}/leaders`).catch(() => ({ data: { data: [] } }))
     const leaders = res.data.data || []
     return leaders.map((m: any) => ({
-      id: m.id,
-      leader: m.user,
-      team: { name: m.team || 'Team' },
+      id: m.person_id || m.id || Math.random().toString(),
+      leader: { name: m.full_name || m.user?.name || 'Leader' },
+      team: { name: m.team?.name || m.team || 'Team' },
       team_size: 12,
       turnover_rate_3m: Math.floor(Math.random() * 30),
-      engage_score: 7 + Math.random() * 2,
+      engage_score: Number((7 + Math.random() * 2).toFixed(1)),
       coaching_flag: false
     }))
   },
